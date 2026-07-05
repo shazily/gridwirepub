@@ -1,0 +1,70 @@
+# Gridwire companion ingestion worker — Kubernetes Deployment
+#
+# Reuses the same `gridwire-env` Secret. Mount NFS/network shares as volumes
+# if the worker needs to read from them (see worker/README.md).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gridwire-worker
+  labels:
+    app: gridwire-worker
+spec:
+  replicas: 1                      # single poller; do not scale horizontally
+  selector:
+    matchLabels:
+      app: gridwire-worker
+  template:
+    metadata:
+      labels:
+        app: gridwire-worker
+    spec:
+      containers:
+        - name: worker
+          # Build from ./worker/Dockerfile:
+          #   docker build -t YOUR_REGISTRY/gridwire-worker:latest ./worker
+          image: YOUR_REGISTRY/gridwire-worker:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PORTAL_URL
+              value: "http://gridwire-portal"   # in-cluster Service DNS
+            - name: HEALTH_PORT
+              value: "8080"
+          envFrom:
+            - secretRef:
+                name: gridwire-env
+          ports:
+            - name: health
+              containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            # Ready only when the worker can reach the portal.
+            httpGet:
+              path: /readyz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          # volumeMounts:
+          #   - name: shares
+          #     mountPath: /mnt/shares
+          #     readOnly: true
+      # volumes:
+      #   - name: shares
+      #     nfs:
+      #       server: nfs.your-company.com
+      #       path: /exports/data

@@ -1,0 +1,69 @@
+# Gridwire scheduled Postgres backup (Kubernetes CronJob).
+#
+# Prereqs:
+#   1. A Secret with the backend connection string:
+#        kubectl -n gridwire create secret generic gridwire-backup \
+#          --from-literal=database-url='postgresql://postgres:PW@BACKEND_HOST:5432/postgres'
+#   2. A PVC to hold dumps (or replace the volume with an object-storage upload
+#      step in the container command).
+#
+# Nightly at 03:00. Keeps 14 days of dumps on the PVC.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gridwire-backups
+  namespace: gridwire
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: gridwire-backup
+  namespace: gridwire
+spec:
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: pg-dump
+              # Match the major version of your backend Postgres.
+              image: postgres:16-alpine
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: gridwire-backup
+                      key: database-url
+                - name: RETENTION_DAYS
+                  value: "14"
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  stamp="$(date +%F_%H%M)"
+                  out="/backups/gridwire-$stamp.dump"
+                  echo "dumping to $out"
+                  pg_dump "$DATABASE_URL" --format=custom --no-owner --no-privileges --file="$out"
+                  pg_restore --list "$out" >/dev/null
+                  echo "OK $(du -h "$out" | cut -f1)"
+                  find /backups -name 'gridwire-*.dump' -mtime "+${RETENTION_DAYS}" -delete || true
+              volumeMounts:
+                - name: backups
+                  mountPath: /backups
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: gridwire-backups

@@ -1,0 +1,51 @@
+# Gridwire — Prometheus scrape configuration (example)
+#
+# Copy the two scrape jobs below into your Prometheus `prometheus.yml`.
+# Both the portal (/api/public/metrics) and the worker (:8080/metrics) expose
+# the Prometheus text exposition format.
+#
+# Auth: if you set METRICS_TOKEN on the portal and/or worker, uncomment the
+# `authorization` block so Prometheus sends it as a Bearer token. Keep the
+# token in a file and reference it (or use a secret) rather than inlining it.
+
+global:
+  scrape_interval: 30s
+  scrape_timeout: 10s
+
+scrape_configs:
+  # --- Portal ---------------------------------------------------------------
+  - job_name: gridwire-portal
+    metrics_path: /api/public/metrics
+    scheme: https
+    static_configs:
+      - targets: ["data.your-company.com"]
+        labels:
+          service: portal
+    # authorization:
+    #   type: Bearer
+    #   credentials_file: /etc/prometheus/gridwire-metrics-token
+
+  # --- Worker ---------------------------------------------------------------
+  # The worker health server listens on HEALTH_PORT (default 8080). In
+  # Kubernetes, prefer pod annotations + kubernetes_sd_configs; the static
+  # example below fits a Docker Compose / systemd deployment.
+  - job_name: gridwire-worker
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets: ["gridwire-worker:8080"]
+        labels:
+          service: worker
+    # authorization:
+    #   type: Bearer
+    #   credentials_file: /etc/prometheus/gridwire-metrics-token
+
+# -----------------------------------------------------------------------------
+# Kubernetes note: the Helm chart pods already expose the metrics ports. To let
+# a Prometheus Operator discover them, add pod annotations via values.yaml, e.g.
+#   portal.podAnnotations:
+#     prometheus.io/scrape: "true"
+#     prometheus.io/path: "/api/public/metrics"
+#     prometheus.io/port: "3000"
+# and scrape the worker's health port (8080) with path /metrics.
+# -----------------------------------------------------------------------------

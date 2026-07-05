@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Gridwire Postgres backup nightly
+
+[Timer]
+# 03:00 daily, with a randomized delay to avoid thundering herds.
+OnCalendar=*-*-* 03:00:00
+RandomizedDelaySec=15m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

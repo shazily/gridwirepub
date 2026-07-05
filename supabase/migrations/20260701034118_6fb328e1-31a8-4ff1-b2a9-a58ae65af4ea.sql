@@ -1,0 +1,1 @@
+ALTER TYPE public.app_org_role ADD VALUE IF NOT EXISTS 'contributor';

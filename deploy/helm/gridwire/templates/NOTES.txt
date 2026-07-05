@@ -1,0 +1,32 @@
+Gridwire has been deployed as release "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+
+{{- if .Values.ingress.enabled }}
+
+Portal URL (once DNS + TLS are configured):
+  https://{{ .Values.ingress.host }}
+{{- else }}
+
+Ingress is disabled. Reach the portal via the Service:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "gridwire.fullname" . }}-portal 8080:{{ .Values.portal.service.port }}
+  open http://localhost:8080
+{{- end }}
+
+Health endpoints:
+  Portal liveness:  {{ .Values.portal.livenessPath }}
+  Portal readiness: {{ .Values.portal.readinessPath }}
+  Worker liveness:  :{{ .Values.worker.healthPort }}/healthz
+  Worker readiness: :{{ .Values.worker.healthPort }}/readyz
+
+{{- if not .Values.config.existingSecret }}
+
+NOTE: config.existingSecret is empty, so a Secret was rendered from values.
+For production, create a Secret from your .env instead and set
+config.existingSecret:
+  kubectl -n {{ .Release.Namespace }} create secret generic gridwire-env --from-env-file=.env
+{{- end }}
+
+Check rollout:
+  kubectl -n {{ .Release.Namespace }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+Upgrade:
+  helm upgrade {{ .Release.Name }} ./deploy/helm/gridwire -n {{ .Release.Namespace }} -f my-values.yaml

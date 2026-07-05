@@ -1,0 +1,13 @@
+[Unit]
+Description=Gridwire nightly Postgres backup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=gridwire
+# Adjust paths and connection string for your host.
+Environment=DATABASE_URL=postgresql://postgres:CHANGE_ME@localhost:5432/postgres
+Environment=BACKUP_DIR=/var/backups/gridwire
+Environment=RETENTION_DAYS=14
+ExecStart=/opt/gridwire/deploy/scripts/backup.sh

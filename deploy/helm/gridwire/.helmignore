@@ -1,0 +1,6 @@
+# Patterns to exclude from `helm package`
+.git
+.gitignore
+.DS_Store
+my-values.yaml
+*.tgz

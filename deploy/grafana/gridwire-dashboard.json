@@ -1,0 +1,185 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "title": "Gridwire — Portal & Worker",
+  "uid": "gridwire-overview",
+  "tags": ["gridwire", "self-hosted"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "time": { "from": "now-6h", "to": "now" },
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {},
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Availability",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "Portal up",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 1 },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+        }
+      },
+      "targets": [ { "expr": "gridwire_portal_up", "refId": "A" } ]
+    },
+    {
+      "type": "stat",
+      "title": "Backend reachable",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 1 },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "OK", "color": "green" } } }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+        }
+      },
+      "targets": [ { "expr": "gridwire_backend_up", "refId": "A" } ]
+    },
+    {
+      "type": "stat",
+      "title": "Worker up",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 1 },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+        }
+      },
+      "targets": [ { "expr": "gridwire_worker_up", "refId": "A" } ]
+    },
+    {
+      "type": "stat",
+      "title": "Worker ready",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 1 },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "NOT READY", "color": "red" }, "1": { "text": "READY", "color": "green" } } }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+        }
+      },
+      "targets": [ { "expr": "gridwire_worker_ready", "refId": "A" } ]
+    },
+    {
+      "type": "row",
+      "title": "API traffic & security",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 }
+    },
+    {
+      "type": "timeseries",
+      "title": "API reads (24h window gauge)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 7 },
+      "targets": [ { "expr": "gridwire_api_reads_24h", "legendFormat": "reads (24h)", "refId": "A" } ]
+    },
+    {
+      "type": "timeseries",
+      "title": "API auth failures (24h window gauge)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 7 },
+      "fieldConfig": {
+        "defaults": { "custom": { "drawStyle": "bars" }, "color": { "mode": "fixed", "fixedColor": "red" } }
+      },
+      "targets": [ { "expr": "gridwire_api_auth_failures_24h", "legendFormat": "auth failures (24h)", "refId": "A" } ]
+    },
+    {
+      "type": "stat",
+      "title": "Active API keys",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 15 },
+      "targets": [ { "expr": "gridwire_api_keys_active_total", "refId": "A" } ]
+    },
+    {
+      "type": "stat",
+      "title": "Datasets",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 15 },
+      "targets": [ { "expr": "gridwire_datasets_total", "refId": "A" } ]
+    },
+    {
+      "type": "stat",
+      "title": "Alert events (24h)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 15 },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 5 } ] }
+        }
+      },
+      "targets": [ { "expr": "gridwire_alert_events_24h", "refId": "A" } ]
+    },
+    {
+      "type": "stat",
+      "title": "Portal uptime (s)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 15 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [ { "expr": "gridwire_portal_uptime_seconds", "refId": "A" } ]
+    },
+    {
+      "type": "row",
+      "title": "Worker job processing",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 20 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Files ingested (rate/min)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 21 },
+      "targets": [ { "expr": "rate(gridwire_worker_files_ingested_total[5m]) * 60", "legendFormat": "files/min", "refId": "A" } ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Poll cycles vs errors (rate/min)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 21 },
+      "targets": [
+        { "expr": "rate(gridwire_worker_poll_cycles_total[5m]) * 60", "legendFormat": "cycles/min", "refId": "A" },
+        { "expr": "rate(gridwire_worker_poll_errors_total[5m]) * 60", "legendFormat": "errors/min", "refId": "B" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Job errors (rate/min)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 29 },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "red" } } },
+      "targets": [ { "expr": "rate(gridwire_worker_job_errors_total[5m]) * 60", "legendFormat": "job errors/min", "refId": "A" } ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Last poll cycle duration",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 29 },
+      "fieldConfig": { "defaults": { "unit": "ms" } },
+      "targets": [ { "expr": "gridwire_worker_last_tick_duration_ms", "legendFormat": "tick duration", "refId": "A" } ]
+    }
+  ]
+}

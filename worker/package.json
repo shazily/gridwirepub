@@ -1,0 +1,21 @@
+{
+  "name": "gridwire-worker",
+  "version": "1.0.0",
+  "description": "Companion ingestion worker for Gridwire — polls SFTP/NFS/folders and pushes spreadsheets into datasets.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "gridwire-worker": "src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "node-cron": "^3.0.3",
+    "ssh2-sftp-client": "^10.0.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

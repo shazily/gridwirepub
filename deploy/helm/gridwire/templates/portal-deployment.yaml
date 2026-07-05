@@ -1,0 +1,110 @@
+{{- if .Values.portal.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gridwire.fullname" . }}-portal
+  labels:
+    {{- include "gridwire.labels" . | nindent 4 }}
+    app.kubernetes.io/component: portal
+spec:
+  {{- if not .Values.portal.autoscaling.enabled }}
+  replicas: {{ .Values.portal.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: portal
+  template:
+    metadata:
+      labels:
+        {{- include "gridwire.labels" . | nindent 8 }}
+        app.kubernetes.io/component: portal
+      {{- with .Values.portal.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: portal
+          image: {{ include "gridwire.image" (dict "root" . "repository" .Values.portal.image.repository "tag" .Values.portal.image.tag) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.portal.service.targetPort }}
+          envFrom:
+            - secretRef:
+                name: {{ include "gridwire.secretName" . }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.portal.readinessPath }}
+              port: {{ .Values.portal.service.targetPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.portal.livenessPath }}
+              port: {{ .Values.portal.service.targetPort }}
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.portal.resources | nindent 12 }}
+      {{- with .Values.portal.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.portal.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.portal.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "gridwire.fullname" . }}-portal
+  labels:
+    {{- include "gridwire.labels" . | nindent 4 }}
+    app.kubernetes.io/component: portal
+spec:
+  type: {{ .Values.portal.service.type }}
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: portal
+  ports:
+    - name: http
+      port: {{ .Values.portal.service.port }}
+      targetPort: {{ .Values.portal.service.targetPort }}
+{{- if .Values.portal.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "gridwire.fullname" . }}-portal
+  labels:
+    {{- include "gridwire.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "gridwire.fullname" . }}-portal
+  minReplicas: {{ .Values.portal.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.portal.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.portal.autoscaling.targetCPUUtilizationPercentage }}
+{{- end }}
+{{- end -}}

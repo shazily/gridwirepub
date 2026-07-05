@@ -1,0 +1,139 @@
+# Gridwire self-host stack: portal + companion ingestion worker.
+#
+# Quick start:
+#   1. cp .env.example .env   # then fill in your own values
+#   2. docker compose up -d --build
+#
+# The portal needs a Postgres-based backend (database + auth + REST). To run
+# that on your own infrastructure too, see DEPLOYMENT.md → "Self-host the
+# backend", then set the SUPABASE_* values in .env to point at it.
+#
+# PRODUCTION: bind to loopback only. Default host port is 3020 (not 3000) so Gridwire
+# does not collide with other local apps / Cloudflare tunnel targets on :3000.
+# Override in .env: GRIDWIRE_HOST_PORT=3020
+
+services:
+  portal:
+    build:
+      context: .
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-${SUPABASE_URL}}
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY:-${SUPABASE_PUBLISHABLE_KEY}}
+        VITE_DEPLOYMENT_MODE: ${VITE_DEPLOYMENT_MODE:-onprem}
+        VITE_SHOW_MARKETING: ${VITE_SHOW_MARKETING:-false}
+        VITE_GA_MEASUREMENT_ID: ${VITE_GA_MEASUREMENT_ID:-}
+    image: gridwire-portal
+    restart: unless-stopped
+    env_file:
+      - .env
+    # Host port → container 3000. Set GRIDWIRE_HOST_PORT in .env (default 3020).
+    ports:
+      - "127.0.0.1:${GRIDWIRE_HOST_PORT:-3020}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      # Backend connection (your self-hosted Postgres + Auth + REST stack)
+      SUPABASE_URL: ${SUPABASE_URL:-${VITE_SUPABASE_URL}}
+      SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY:-${VITE_SUPABASE_PUBLISHABLE_KEY}}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      # 64 hex chars (32 bytes) for AES-256-GCM field encryption. Keep stable across deploys.
+      FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY}
+      VITE_SUPABASE_URL: ${SUPABASE_URL:-${VITE_SUPABASE_URL}}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY:-${VITE_SUPABASE_PUBLISHABLE_KEY}}
+      # Shared token the worker uses to authenticate
+      WORKER_INGEST_TOKEN: ${WORKER_INGEST_TOKEN}
+      METRICS_TOKEN: ${METRICS_TOKEN}
+      API_RATE_LIMIT_PER_MIN: ${API_RATE_LIMIT_PER_MIN:-60}
+      API_RATE_LIMIT_BURST: ${API_RATE_LIMIT_BURST:-20}
+    healthcheck:
+      # Liveness: process is up and serving. Does not touch the backend.
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/public/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - gridwire
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1g
+        reservations:
+          cpus: "0.25"
+          memory: 256m
+
+  worker:
+    build: ./worker
+    image: gridwire-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      portal:
+        condition: service_healthy
+    environment:
+      PORTAL_URL: http://portal:3000
+      WORKER_INGEST_TOKEN: ${WORKER_INGEST_TOKEN}
+      POLL_CRON: ${POLL_CRON:-*/5 * * * *}
+      SFTP_SECRETS: ${SFTP_SECRETS:-{}}
+      HEALTH_PORT: "8080"
+    healthcheck:
+      # Liveness: the worker's internal health server responds.
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    volumes:
+      - worker-state:/data
+      # Mount any NFS/network shares you want the worker to read, e.g.:
+      # - /mnt/shares:/mnt/shares:ro
+    networks:
+      - gridwire
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512m
+        reservations:
+          cpus: "0.1"
+          memory: 128m
+
+  # ---------------------------------------------------------------------------
+  # Optional: uncomment to run a TLS-terminating reverse proxy in the same
+  # stack. Provide certs under ./deploy/nginx/certs and set your domain in
+  # deploy/nginx/gridwire.conf. For automatic Let's Encrypt certs, prefer
+  # Traefik or Caddy instead (see DEPLOYMENT.md §5).
+  #
+  # proxy:
+  #   image: nginx:1.27-alpine
+  #   restart: unless-stopped
+  #   depends_on:
+  #     portal:
+  #       condition: service_healthy
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./deploy/nginx/gridwire.conf:/etc/nginx/conf.d/gridwire.conf:ro
+  #     - ./deploy/nginx/certs:/etc/ssl:ro
+  #   networks:
+  #     - gridwire
+
+networks:
+  gridwire:
+    driver: bridge
+
+volumes:
+  worker-state:

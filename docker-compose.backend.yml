@@ -1,0 +1,85 @@
+# Optional self-hosted Supabase-compatible backend (Path B).
+# Enable with: GRIDWIRE_INCLUDE_BACKEND=1 .\scripts\deploy.ps1 up
+#
+# API gateway: http://127.0.0.1:3040  → set SUPABASE_URL in .env
+# Direct Postgres (migrations): postgresql://postgres:${POSTGRES_PASSWORD}@127.0.0.1:54332/postgres
+# Ports chosen to avoid common local collisions (3000/54321/54322 used by other stacks).
+
+services:
+  db:
+    image: supabase/postgres:15.8.1.060
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:54332:5432"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: postgres
+    volumes:
+      - gridwire-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - gridwire-backend
+
+  rest:
+    image: postgrest/postgrest:v12.2.12
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD:-postgres}@db:5432/postgres
+      PGRST_DB_SCHEMAS: public,storage,graphql_public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+    networks:
+      - gridwire-backend
+
+  auth:
+    image: supabase/gotrue:v2.167.0
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${API_EXTERNAL_URL:-http://127.0.0.1:3040}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD:-postgres}@db:5432/postgres
+      GOTRUE_SITE_URL: ${SITE_URL:-http://127.0.0.1:3000}
+      GOTRUE_URI_ALLOW_LIST: ${SITE_URL:-http://127.0.0.1:3000}
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+    networks:
+      - gridwire-backend
+
+  kong:
+    image: kong:2.8.1
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3040:8000"
+    depends_on:
+      - rest
+      - auth
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl
+    volumes:
+      - ./deploy/supabase/kong.yml:/var/lib/kong/kong.yml:ro
+    networks:
+      - gridwire-backend
+
+networks:
+  gridwire-backend:
+    driver: bridge
+
+volumes:
+  gridwire-db:

@@ -1,0 +1,342 @@
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { isOnPremDeployment } from "@/lib/deployment";
+import { fetchPortalBranding } from "@/lib/portal-branding";
+import { PortalBrand } from "@/components/brand";
+import { PublicSiteFooter, PublicSiteHeader } from "@/components/public-chrome";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { Loader2, ArrowRight, ShieldCheck, GitBranch, KeyRound } from "lucide-react";
+
+export const Route = createFileRoute("/auth")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    org: typeof search.org === "string" && search.org.trim() ? search.org.trim() : undefined,
+  }),
+  head: () => ({
+    meta: [
+      { title: "Sign in — Gridwire" },
+      { name: "description", content: "Sign in to your Gridwire workspace to turn spreadsheets into APIs." },
+    ],
+  }),
+  component: AuthPage,
+});
+
+function AuthPage() {
+  const navigate = useNavigate();
+  const { org: orgSlug } = Route.useSearch();
+  const branding = useQuery({
+    queryKey: ["portal-branding", orgSlug],
+    queryFn: () => fetchPortalBranding(orgSlug!),
+    enabled: !!orgSlug,
+    staleTime: 60_000,
+    retry: false,
+  });
+  const portalActive = !!orgSlug && !!branding.data && !branding.isError;
+  const platformName = portalActive ? branding.data!.platform_name : "Gridwire";
+  const logoUrl = portalActive ? branding.data!.logo_url : null;
+  const orgName = portalActive ? branding.data!.organization_name : null;
+  const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const publicConfig = useQuery({
+    queryKey: ["public-config"],
+    queryFn: async () => {
+      const res = await fetch("/api/public/config");
+      if (!res.ok) throw new Error("config unavailable");
+      return res.json() as Promise<{
+        password_reset_available: boolean;
+        email_confirm_required: boolean;
+        smtp_configured: boolean;
+      }>;
+    },
+    staleTime: 60_000,
+  });
+
+  const passwordResetAvailable = publicConfig.data?.password_reset_available ?? false;
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) navigate({ to: "/dashboard", replace: true });
+    });
+  }, [navigate]);
+
+  async function handleEmail(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      if (mode === "forgot") {
+        if (!passwordResetAvailable) {
+          throw new Error(
+            "Password reset email is not configured on this server. Ask your administrator to configure Postmark or SMTP in the deployment .env file.",
+          );
+        }
+        if (isOnPremDeployment) {
+          const res = await fetch("/api/public/auth/recover", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email,
+              redirectTo: `${window.location.origin}/reset-password`,
+            }),
+          });
+          const data = (await res.json()) as { error?: string; message?: string };
+          if (!res.ok) throw new Error(data.error ?? "Could not send reset email");
+        } else {
+          const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/reset-password`,
+          });
+          if (error) throw error;
+        }
+        toast.success("If an account exists for that email, a reset link has been sent.");
+        setMode("signin");
+        return;
+      }
+      if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: window.location.origin,
+            data: { display_name: name || email.split("@")[0] },
+          },
+        });
+        if (error) throw error;
+        if (!data.session) {
+          toast.success("Check your email to confirm your account, then sign in.");
+          setMode("signin");
+          return;
+        }
+        toast.success("Account created. Welcome to Gridwire!");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      }
+      navigate({ to: "/dashboard", replace: true });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Authentication failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+
+  async function handleGoogle() {
+    if (isOnPremDeployment) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin },
+      });
+      if (error) throw error;
+    } catch {
+      toast.error("Google sign-in failed");
+      setLoading(false);
+    }
+  }
+
+  const homeTo = portalActive && orgSlug ? "/portal/$orgSlug" : "/";
+  const homeParams = orgSlug ? { orgSlug } : undefined;
+
+  return (
+    <div className="flex min-h-screen flex-col">
+      <PublicSiteHeader
+        homeTo={homeTo}
+        homeParams={homeParams}
+        trailing={
+          <Button variant="outline" size="sm" className="bg-background/80 shadow-sm" asChild>
+            <Link to={homeTo} params={homeParams}>
+              Home
+            </Link>
+          </Button>
+        }
+      />
+
+      <div className="grid flex-1 lg:grid-cols-2">
+      {/* Brand panel */}
+      <div className="relative hidden flex-col justify-between overflow-hidden bg-sidebar p-12 lg:flex">
+        <div className="grid-bg absolute inset-0 opacity-40" />
+        <div className="relative max-w-md space-y-6 pt-4">
+          <h2 className="font-display text-4xl font-bold leading-tight">
+            {portalActive && orgName
+              ? `Sign in to ${orgName}`
+              : "Turn any spreadsheet into a secure production API."}
+          </h2>
+          <p className="text-muted-foreground">
+            {portalActive
+              ? `Access ${platformName} to publish and consume spreadsheet data as secure APIs.`
+              : "Upload Excel or CSV, map your fields, and ship a secure, documented REST API in minutes. Open source and self-hostable."}
+          </p>
+          <ul className="space-y-3 text-sm">
+            <li className="flex items-center gap-3">
+              <GitBranch className="h-4 w-4 text-primary" /> Versioning & baseline diffing
+            </li>
+            <li className="flex items-center gap-3">
+              <ShieldCheck className="h-4 w-4 text-primary" /> Masking, hashing & encryption
+            </li>
+            <li className="flex items-center gap-3">
+              <KeyRound className="h-4 w-4 text-primary" /> Scoped API keys & audit logs
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Form panel */}
+      <div className="flex items-center justify-center p-6">
+        <div className="w-full max-w-sm">
+          {portalActive && (
+            <div className="mb-8 lg:hidden">
+              <PortalBrand platformName={platformName} logoUrl={logoUrl} />
+            </div>
+          )}
+          <h1 className="text-2xl font-bold tracking-tight">
+            {mode === "signin" ? "Welcome back" : mode === "signup" ? "Create your account" : "Reset your password"}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {mode === "signin"
+              ? "Sign in to your workspace."
+              : mode === "signup"
+                ? "Start turning spreadsheets into APIs."
+                : "Enter your email and we'll send you a reset link."}
+          </p>
+
+          {mode !== "forgot" && !isOnPremDeployment && (
+            <>
+              <Button
+                variant="outline"
+                className="mt-6 w-full"
+                onClick={handleGoogle}
+                disabled={loading}
+              >
+                <GoogleIcon /> Continue with Google
+              </Button>
+
+              <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
+                <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
+              </div>
+            </>
+          )}
+
+          <form onSubmit={handleEmail} className={mode === "forgot" ? "mt-6 space-y-4" : "space-y-4"}>
+            {mode === "forgot" && !passwordResetAvailable && publicConfig.isSuccess && (
+              <p className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-muted-foreground">
+                This deployment has no outbound email configured (set Postmark or{" "}
+                <code className="text-[10px]">SMTP_HOST</code> in <code className="text-[10px]">.env</code>).
+                Password reset links cannot be sent until mail is configured. On a demo install, ask your operator
+                to add Postmark credentials or reset your password via the database.
+              </p>
+            )}
+            {mode === "signup" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="name">Name</Label>
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ada Lovelace" />
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@company.com"
+              />
+            </div>
+            {mode !== "forgot" && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  {mode === "signin" && (
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-primary hover:underline"
+                      onClick={() => setMode("forgot")}
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                />
+              </div>
+            )}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                <>
+                  {mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Send reset link"}
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            {mode === "forgot" ? (
+              <>
+                Remembered it?{" "}
+                <button
+                  className="font-medium text-primary hover:underline"
+                  onClick={() => setMode("signin")}
+                >
+                  Back to sign in
+                </button>
+              </>
+            ) : (
+              <>
+                {mode === "signin" ? "Don't have an account? " : "Already have an account? "}
+                <button
+                  className="font-medium text-primary hover:underline"
+                  onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+                >
+                  {mode === "signin" ? "Sign up" : "Sign in"}
+                </button>
+              </>
+            )}
+          </p>
+
+        </div>
+      </div>
+      </div>
+
+      <PublicSiteFooter />
+    </div>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg className="h-4 w-4" viewBox="0 0 24 24">
+      <path
+        fill="#4285F4"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z"
+      />
+    </svg>
+  );
+}

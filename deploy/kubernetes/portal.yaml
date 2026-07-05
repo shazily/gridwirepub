@@ -1,0 +1,72 @@
+# Gridwire portal — Kubernetes Deployment + Service
+#
+# Config is injected from a Secret named `gridwire-env`, created from your .env:
+#   kubectl -n gridwire create secret generic gridwire-env --from-env-file=.env
+#
+# See DEPLOYMENT.md §6.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gridwire-portal
+  labels:
+    app: gridwire-portal
+spec:
+  replicas: 2                      # portal is stateless — scale freely for HA
+  selector:
+    matchLabels:
+      app: gridwire-portal
+  template:
+    metadata:
+      labels:
+        app: gridwire-portal
+    spec:
+      containers:
+        - name: portal
+          # Build and push this image from the repo root Dockerfile:
+          #   docker build -t YOUR_REGISTRY/gridwire-portal:latest .
+          #   docker push YOUR_REGISTRY/gridwire-portal:latest
+          image: YOUR_REGISTRY/gridwire-portal:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: gridwire-env
+          readinessProbe:
+            # Backend-aware: pod leaves the Service if the database is unreachable.
+            httpGet:
+              path: /api/public/ready
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            # Process-only: does not restart the pod when the backend is slow.
+            httpGet:
+              path: /api/public/health
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gridwire-portal
+spec:
+  selector:
+    app: gridwire-portal
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+  type: ClusterIP

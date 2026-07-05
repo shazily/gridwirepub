@@ -1,0 +1,16 @@
+# Gitleaks config for Gridwire public repo.
+# CI runs on every push/PR. Placeholders in docs and .env.example are allowlisted.
+
+title = "Gridwire gitleaks"
+
+[allowlist]
+description = "Documented placeholders and example curl snippets"
+paths = [
+  '''\.env\.example$''',
+  '''^README\.md$''',
+  '''^docs/index\.html$''',
+]
+regexes = [
+  '''replace-with''',
+  '''YOUR_API_KEY''',
+]

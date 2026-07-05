@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gridwire — Turn any spreadsheet into a production API</title>
+    <meta name="description" content="Gridwire is an open-source, self-hostable portal that converts Excel and CSV files into secure, documented REST APIs — with field mapping, versioning, masking, scoped API keys, multi-tenant orgs, connectors, and an admin console." />
+    <meta property="og:title" content="Gridwire — Turn any spreadsheet into a production API" />
+    <meta property="og:description" content="Open-source portal that converts Excel/CSV into secure, documented REST APIs. Self-hostable. MIT licensed." />
+    <meta property="og:type" content="website" />
+    <style>
+      :root {
+        --bg: #0b1020; --surface: #121931; --border: #233056;
+        --text: #e6ebf7; --muted: #9aa7c7; --primary: #5b8cff; --accent: #36d399;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+      a { color: var(--primary); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      .wrap { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+      header { border-bottom: 1px solid var(--border); }
+      .nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
+      .brand { font-weight: 800; font-size: 20px; letter-spacing: -0.02em; }
+      .brand span { color: var(--primary); }
+      .hero { padding: 80px 0 56px; text-align: center; }
+      .hero h1 { font-size: clamp(34px, 6vw, 56px); line-height: 1.05; margin: 0 0 16px; letter-spacing: -0.03em; }
+      .hero p { font-size: 19px; color: var(--muted); max-width: 640px; margin: 0 auto 28px; }
+      .btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+      .btn { display: inline-block; padding: 12px 22px; border-radius: 10px; font-weight: 600; }
+      .btn-primary { background: var(--primary); color: #fff; }
+      .btn-ghost { border: 1px solid var(--border); color: var(--text); }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 24px 0; }
+      .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+      .card h3 { margin: 0 0 6px; font-size: 16px; }
+      .card p { margin: 0; color: var(--muted); font-size: 14px; }
+      section { padding: 48px 0; border-top: 1px solid var(--border); }
+      section h2 { font-size: 28px; letter-spacing: -0.02em; margin: 0 0 8px; }
+      section .sub { color: var(--muted); margin: 0 0 24px; }
+      pre { background: #0a0f1f; border: 1px solid var(--border); border-radius: 12px; padding: 16px; overflow-x: auto; font-size: 13px; }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .pill { display:inline-block; background: rgba(54,211,153,.12); color: var(--accent); border:1px solid rgba(54,211,153,.3); padding:4px 12px; border-radius:999px; font-size:13px; font-weight:600; margin-bottom:20px; }
+      footer { border-top: 1px solid var(--border); padding: 32px 0; color: var(--muted); font-size: 14px; text-align: center; }
+      ol { color: var(--muted); }
+      ol code { color: var(--text); }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap nav">
+        <div class="brand">Grid<span>wire</span></div>
+        <nav style="display:flex; gap:20px;">
+          <a href="#features">Features</a>
+          <a href="#quickstart">Quickstart</a>
+          <a href="#deploy">Deploy</a>
+          <a href="#api">API</a>
+          <a href="https://github.com/shazily/gridwirepub">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="wrap hero">
+        <div class="pill">Open source · MIT · Self-hostable</div>
+        <h1>Turn any spreadsheet into a production API.</h1>
+        <p>
+          Gridwire converts Excel and CSV files into secure, documented REST APIs —
+          with field mapping, versioning, masking, scoped API keys, multi-tenant
+          organizations, automated connectors, and an admin console.
+        </p>
+        <div class="btns">
+          <a class="btn btn-primary" href="https://github.com/shazily/gridwirepub">Get the Repo</a>
+          <a class="btn btn-ghost" href="#quickstart">Self-host in minutes</a>
+        </div>
+      </div>
+
+      <section id="features">
+        <div class="wrap">
+          <h2>Everything you need to ship data APIs</h2>
+          <p class="sub">From messy multi-tab workbooks to clean, governed endpoints.</p>
+          <div class="grid">
+            <div class="card"><h3>📊 Multi-tab parsing</h3><p>Excel (.xlsx/.xls) and CSV with all tabs, headers, and computed formula values. Macros are detected and never executed.</p></div>
+            <div class="card"><h3>🧭 Field-mapping wizard</h3><p>Auto-suggested snake_case API names, per-field types, PII flags, and masking (none / mask / hash).</p></div>
+            <div class="card"><h3>🔌 Generated REST API</h3><p>Each sheet becomes a documented endpoint with limit/offset/fields and field filtering. Bearer API-key auth.</p></div>
+            <div class="card"><h3>🕓 Versioning &amp; diffs</h3><p>Every upload is a version; the first is the baseline. Re-uploads are diffed for schema drift.</p></div>
+            <div class="card"><h3>🔐 Masking &amp; hashing</h3><p>Sensitive fields are masked or hashed at serve time. Encryption in transit and at rest.</p></div>
+            <div class="card"><h3>👥 Multi-tenant</h3><p>Organizations with owner / admin / member / viewer roles and full row-level isolation.</p></div>
+            <div class="card"><h3>📥 Connectors</h3><p>SFTP, NFS / network shares, and watched folders via the companion worker — with test runs and logs.</p></div>
+            <div class="card"><h3>🔔 Alerts</h3><p>In-app feed plus email notifications for publishes, schema drift, and ingestion failures.</p></div>
+            <div class="card"><h3>📖 Auto API docs</h3><p>Per-dataset reference with cURL / JS snippets and a downloadable OpenAPI spec.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="quickstart">
+        <div class="wrap">
+          <h2>Deploy on-premise with Docker</h2>
+          <p class="sub">Runs entirely on infrastructure you own — no external SaaS dependency.</p>
+          <pre><code>git clone https://github.com/shazily/gridwirepub.git
+cd gridwirepub
+cp .env.example .env          # fill in your own values
+
+docker compose up -d --build  # portal + ingestion worker
+
+# portal on http://localhost:3000 — put your TLS reverse proxy in front</code></pre>
+          <ol>
+            <li>Create an organization and sign in.</li>
+            <li>Upload a spreadsheet and map fields in the wizard.</li>
+            <li>Create an API key and call your new endpoint.</li>
+            <li>Optionally add SFTP/NFS/folder connectors for automated ingestion.</li>
+          </ol>
+        </div>
+      </section>
+
+      <section id="deploy">
+        <div class="wrap">
+          <h2>Built for on-premise</h2>
+          <p class="sub">Standard, vendor-neutral tooling. Deploy however your team already ships software.</p>
+          <div class="grid">
+            <div class="card"><h3>🐳 Docker Compose</h3><p>One host, one file. The recommended baseline for pilots and small teams.</p></div>
+            <div class="card"><h3>☸️ Kubernetes</h3><p>Reference manifests for a stateless, horizontally-scalable portal with rolling upgrades.</p></div>
+            <div class="card"><h3>🔒 Your backend, your data</h3><p>Postgres + Auth + REST run on your hardware. Air-gap friendly, no outbound calls.</p></div>
+            <div class="card"><h3>🔑 Bring your own secrets</h3><p>12-factor config via environment variables and your existing secrets manager.</p></div>
+            <div class="card"><h3>💾 Backups &amp; upgrades</h3><p>All state in Postgres — standard <code>pg_dump</code> backups and migration-based upgrades.</p></div>
+            <div class="card"><h3>🛡️ TLS everywhere</h3><p>Terminate TLS at Nginx, Traefik, or Caddy. Example configs included.</p></div>
+          </div>
+          <p style="margin-top:20px;">Full step-by-step guide, including self-hosting the backend, Kubernetes manifests, reverse-proxy TLS, secrets, and backups:
+            <a href="https://github.com/shazily/gridwirepub/blob/main/DEPLOYMENT.md"><strong>DEPLOYMENT.md →</strong></a>
+          </p>
+        </div>
+      </section>
+
+
+      <section id="api">
+        <div class="wrap">
+          <h2>Consume your data anywhere</h2>
+          <p class="sub">Every published sheet is a REST endpoint.</p>
+          <pre><code>curl -H "Authorization: Bearer YOUR_API_KEY" \
+  "https://your-host/api/v1/datasets/DATASET_ID/sheet-name?limit=20&amp;offset=0"</code></pre>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        Gridwire — open-source spreadsheet-to-API portal · MIT licensed ·
+        <a href="https://github.com/shazily/gridwirepub">View on GitHub</a>
+      </div>
+    </footer>
+  </body>
+</html>
