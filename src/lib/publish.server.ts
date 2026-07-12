@@ -43,7 +43,7 @@ export async function publishVersionServer(
     fileBytes?: ArrayBuffer | null;
     inviteId?: string | null;
   },
-): Promise<{ datasetId: string; versionNo: number; diff: DiffSummary }> {
+): Promise<{ datasetId: string; versionId: string; versionNo: number; diff: DiffSummary }> {
   const admin = supabaseAdmin;
   const actorId = await resolvePublishActorId(admin, input.orgId, input.userId);
   const includedSheets = input.sheets.filter((s) => s.included);
@@ -367,5 +367,5 @@ export async function publishVersionServer(
     typeChanges: diff.type_changed,
   });
 
-  return { datasetId, versionNo, diff };
+  return { datasetId, versionId, versionNo, diff };
 }

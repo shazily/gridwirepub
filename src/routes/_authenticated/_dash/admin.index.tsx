@@ -18,6 +18,7 @@ import {
   ArrowRight,
   HardDrive,
   BookOpen,
+  BrainCircuit,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/_dash/admin/")({
@@ -91,6 +92,7 @@ function AdminHome() {
     { to: "/admin/security", label: "Security", description: "Portal IP allowlist and access control.", icon: ShieldAlert },
     { to: "/admin/storage", label: "Storage & quotas", description: "Object storage, upload limits, and team space allocation.", icon: HardDrive },
     { to: "/admin/authentication", label: "Authentication", description: "SSO, MFA policy, org SMTP and SMS for OTP.", icon: KeyRound },
+    { to: "/admin/ai", label: "AI / PDF", description: "LLM provider keys and PDF table parser settings.", icon: BrainCircuit },
     { to: "/admin/email-ingest", label: "Email ingest", description: "Allowlisted senders email Excel files for ingestion.", icon: MessageSquarePlus },
     { to: "/admin/organization", label: "Organization", description: "Portal branding, workspace name, and invite links.", icon: Building2, stat: stats.data?.invites, statLabel: "active invites" },
     { to: "/admin/usage", label: "Usage & analytics", description: "API consumption and connector activity for your org.", icon: BarChart3, stat: stats.data?.calls },

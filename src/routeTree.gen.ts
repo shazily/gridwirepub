@@ -48,6 +48,7 @@ import { Route as ApiPublicPortalOrgSlugRouteImport } from './routes/api/public/
 import { Route as ApiPublicInboundWebhookRouteImport } from './routes/api/public/inbound/webhook'
 import { Route as ApiPublicInboundPostmarkRouteImport } from './routes/api/public/inbound/postmark'
 import { Route as ApiPublicAuthRecoverRouteImport } from './routes/api/public/auth/recover'
+import { Route as AuthenticatedDashDatasetsPdfReviewsRouteImport } from './routes/_authenticated/_dash/datasets.pdf-reviews'
 import { Route as AuthenticatedDashDatasetsNewRouteImport } from './routes/_authenticated/_dash/datasets.new'
 import { Route as AuthenticatedDashDatasetsDatasetIdRouteImport } from './routes/_authenticated/_dash/datasets.$datasetId'
 import { Route as AuthenticatedDashAdminWorkspacesRouteImport } from './routes/_authenticated/_dash/admin.workspaces'
@@ -64,6 +65,7 @@ import { Route as AuthenticatedDashAdminAuditRouteImport } from './routes/_authe
 import { Route as AuthenticatedDashAdminApiKeysRouteImport } from './routes/_authenticated/_dash/admin.api-keys'
 import { Route as AuthenticatedDashAdminApiDocsRouteImport } from './routes/_authenticated/_dash/admin.api-docs'
 import { Route as AuthenticatedDashAdminAlertsRouteImport } from './routes/_authenticated/_dash/admin.alerts'
+import { Route as AuthenticatedDashAdminAiRouteImport } from './routes/_authenticated/_dash/admin.ai'
 import { Route as ApiV1DatasetsDatasetIdOpenapiDotjsonRouteImport } from './routes/api/v1/datasets.$datasetId.openapi[.]json'
 import { Route as ApiV1DatasetsDatasetIdLineageDotjsonRouteImport } from './routes/api/v1/datasets.$datasetId.lineage[.]json'
 import { Route as ApiV1DatasetsDatasetIdContractDotyamlRouteImport } from './routes/api/v1/datasets.$datasetId.contract[.]yaml'
@@ -280,6 +282,12 @@ const ApiPublicAuthRecoverRoute = ApiPublicAuthRecoverRouteImport.update({
   path: '/api/public/auth/recover',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedDashDatasetsPdfReviewsRoute =
+  AuthenticatedDashDatasetsPdfReviewsRouteImport.update({
+    id: '/datasets/pdf-reviews',
+    path: '/datasets/pdf-reviews',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
 const AuthenticatedDashDatasetsNewRoute =
   AuthenticatedDashDatasetsNewRouteImport.update({
     id: '/datasets/new',
@@ -376,6 +384,12 @@ const AuthenticatedDashAdminAlertsRoute =
     path: '/admin/alerts',
     getParentRoute: () => AuthenticatedDashRoute,
   } as any)
+const AuthenticatedDashAdminAiRoute =
+  AuthenticatedDashAdminAiRouteImport.update({
+    id: '/admin/ai',
+    path: '/admin/ai',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
 const ApiV1DatasetsDatasetIdOpenapiDotjsonRoute =
   ApiV1DatasetsDatasetIdOpenapiDotjsonRouteImport.update({
     id: '/openapi.json',
@@ -453,6 +467,7 @@ export interface FileRoutesByFullPath {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/metrics': typeof ApiPublicMetricsRoute
   '/api/public/ready': typeof ApiPublicReadyRoute
+  '/admin/ai': typeof AuthenticatedDashAdminAiRoute
   '/admin/alerts': typeof AuthenticatedDashAdminAlertsRoute
   '/admin/api-docs': typeof AuthenticatedDashAdminApiDocsRoute
   '/admin/api-keys': typeof AuthenticatedDashAdminApiKeysRoute
@@ -469,6 +484,7 @@ export interface FileRoutesByFullPath {
   '/admin/workspaces': typeof AuthenticatedDashAdminWorkspacesRoute
   '/datasets/$datasetId': typeof AuthenticatedDashDatasetsDatasetIdRoute
   '/datasets/new': typeof AuthenticatedDashDatasetsNewRoute
+  '/datasets/pdf-reviews': typeof AuthenticatedDashDatasetsPdfReviewsRoute
   '/api/public/auth/recover': typeof ApiPublicAuthRecoverRoute
   '/api/public/inbound/postmark': typeof ApiPublicInboundPostmarkRoute
   '/api/public/inbound/webhook': typeof ApiPublicInboundWebhookRoute
@@ -516,6 +532,7 @@ export interface FileRoutesByTo {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/metrics': typeof ApiPublicMetricsRoute
   '/api/public/ready': typeof ApiPublicReadyRoute
+  '/admin/ai': typeof AuthenticatedDashAdminAiRoute
   '/admin/alerts': typeof AuthenticatedDashAdminAlertsRoute
   '/admin/api-docs': typeof AuthenticatedDashAdminApiDocsRoute
   '/admin/api-keys': typeof AuthenticatedDashAdminApiKeysRoute
@@ -532,6 +549,7 @@ export interface FileRoutesByTo {
   '/admin/workspaces': typeof AuthenticatedDashAdminWorkspacesRoute
   '/datasets/$datasetId': typeof AuthenticatedDashDatasetsDatasetIdRoute
   '/datasets/new': typeof AuthenticatedDashDatasetsNewRoute
+  '/datasets/pdf-reviews': typeof AuthenticatedDashDatasetsPdfReviewsRoute
   '/api/public/auth/recover': typeof ApiPublicAuthRecoverRoute
   '/api/public/inbound/postmark': typeof ApiPublicInboundPostmarkRoute
   '/api/public/inbound/webhook': typeof ApiPublicInboundWebhookRoute
@@ -582,6 +600,7 @@ export interface FileRoutesById {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/metrics': typeof ApiPublicMetricsRoute
   '/api/public/ready': typeof ApiPublicReadyRoute
+  '/_authenticated/_dash/admin/ai': typeof AuthenticatedDashAdminAiRoute
   '/_authenticated/_dash/admin/alerts': typeof AuthenticatedDashAdminAlertsRoute
   '/_authenticated/_dash/admin/api-docs': typeof AuthenticatedDashAdminApiDocsRoute
   '/_authenticated/_dash/admin/api-keys': typeof AuthenticatedDashAdminApiKeysRoute
@@ -598,6 +617,7 @@ export interface FileRoutesById {
   '/_authenticated/_dash/admin/workspaces': typeof AuthenticatedDashAdminWorkspacesRoute
   '/_authenticated/_dash/datasets/$datasetId': typeof AuthenticatedDashDatasetsDatasetIdRoute
   '/_authenticated/_dash/datasets/new': typeof AuthenticatedDashDatasetsNewRoute
+  '/_authenticated/_dash/datasets/pdf-reviews': typeof AuthenticatedDashDatasetsPdfReviewsRoute
   '/api/public/auth/recover': typeof ApiPublicAuthRecoverRoute
   '/api/public/inbound/postmark': typeof ApiPublicInboundPostmarkRoute
   '/api/public/inbound/webhook': typeof ApiPublicInboundWebhookRoute
@@ -647,6 +667,7 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/metrics'
     | '/api/public/ready'
+    | '/admin/ai'
     | '/admin/alerts'
     | '/admin/api-docs'
     | '/admin/api-keys'
@@ -663,6 +684,7 @@ export interface FileRouteTypes {
     | '/admin/workspaces'
     | '/datasets/$datasetId'
     | '/datasets/new'
+    | '/datasets/pdf-reviews'
     | '/api/public/auth/recover'
     | '/api/public/inbound/postmark'
     | '/api/public/inbound/webhook'
@@ -710,6 +732,7 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/metrics'
     | '/api/public/ready'
+    | '/admin/ai'
     | '/admin/alerts'
     | '/admin/api-docs'
     | '/admin/api-keys'
@@ -726,6 +749,7 @@ export interface FileRouteTypes {
     | '/admin/workspaces'
     | '/datasets/$datasetId'
     | '/datasets/new'
+    | '/datasets/pdf-reviews'
     | '/api/public/auth/recover'
     | '/api/public/inbound/postmark'
     | '/api/public/inbound/webhook'
@@ -775,6 +799,7 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/metrics'
     | '/api/public/ready'
+    | '/_authenticated/_dash/admin/ai'
     | '/_authenticated/_dash/admin/alerts'
     | '/_authenticated/_dash/admin/api-docs'
     | '/_authenticated/_dash/admin/api-keys'
@@ -791,6 +816,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_dash/admin/workspaces'
     | '/_authenticated/_dash/datasets/$datasetId'
     | '/_authenticated/_dash/datasets/new'
+    | '/_authenticated/_dash/datasets/pdf-reviews'
     | '/api/public/auth/recover'
     | '/api/public/inbound/postmark'
     | '/api/public/inbound/webhook'
@@ -1110,6 +1136,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAuthRecoverRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/_dash/datasets/pdf-reviews': {
+      id: '/_authenticated/_dash/datasets/pdf-reviews'
+      path: '/datasets/pdf-reviews'
+      fullPath: '/datasets/pdf-reviews'
+      preLoaderRoute: typeof AuthenticatedDashDatasetsPdfReviewsRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
     '/_authenticated/_dash/datasets/new': {
       id: '/_authenticated/_dash/datasets/new'
       path: '/datasets/new'
@@ -1222,6 +1255,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashAdminAlertsRouteImport
       parentRoute: typeof AuthenticatedDashRoute
     }
+    '/_authenticated/_dash/admin/ai': {
+      id: '/_authenticated/_dash/admin/ai'
+      path: '/admin/ai'
+      fullPath: '/admin/ai'
+      preLoaderRoute: typeof AuthenticatedDashAdminAiRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
     '/api/v1/datasets/$datasetId/openapi.json': {
       id: '/api/v1/datasets/$datasetId/openapi.json'
       path: '/openapi.json'
@@ -1295,6 +1335,7 @@ interface AuthenticatedDashRouteChildren {
   AuthenticatedDashSettingsRoute: typeof AuthenticatedDashSettingsRoute
   AuthenticatedDashStorageRoute: typeof AuthenticatedDashStorageRoute
   AuthenticatedDashWorkspacesRoute: typeof AuthenticatedDashWorkspacesRoute
+  AuthenticatedDashAdminAiRoute: typeof AuthenticatedDashAdminAiRoute
   AuthenticatedDashAdminAlertsRoute: typeof AuthenticatedDashAdminAlertsRoute
   AuthenticatedDashAdminApiDocsRoute: typeof AuthenticatedDashAdminApiDocsRoute
   AuthenticatedDashAdminApiKeysRoute: typeof AuthenticatedDashAdminApiKeysRoute
@@ -1311,6 +1352,7 @@ interface AuthenticatedDashRouteChildren {
   AuthenticatedDashAdminWorkspacesRoute: typeof AuthenticatedDashAdminWorkspacesRoute
   AuthenticatedDashDatasetsDatasetIdRoute: typeof AuthenticatedDashDatasetsDatasetIdRoute
   AuthenticatedDashDatasetsNewRoute: typeof AuthenticatedDashDatasetsNewRoute
+  AuthenticatedDashDatasetsPdfReviewsRoute: typeof AuthenticatedDashDatasetsPdfReviewsRoute
   AuthenticatedDashAdminIndexRoute: typeof AuthenticatedDashAdminIndexRoute
   AuthenticatedDashDatasetsIndexRoute: typeof AuthenticatedDashDatasetsIndexRoute
 }
@@ -1329,6 +1371,7 @@ const AuthenticatedDashRouteChildren: AuthenticatedDashRouteChildren = {
   AuthenticatedDashSettingsRoute: AuthenticatedDashSettingsRoute,
   AuthenticatedDashStorageRoute: AuthenticatedDashStorageRoute,
   AuthenticatedDashWorkspacesRoute: AuthenticatedDashWorkspacesRoute,
+  AuthenticatedDashAdminAiRoute: AuthenticatedDashAdminAiRoute,
   AuthenticatedDashAdminAlertsRoute: AuthenticatedDashAdminAlertsRoute,
   AuthenticatedDashAdminApiDocsRoute: AuthenticatedDashAdminApiDocsRoute,
   AuthenticatedDashAdminApiKeysRoute: AuthenticatedDashAdminApiKeysRoute,
@@ -1349,6 +1392,8 @@ const AuthenticatedDashRouteChildren: AuthenticatedDashRouteChildren = {
   AuthenticatedDashDatasetsDatasetIdRoute:
     AuthenticatedDashDatasetsDatasetIdRoute,
   AuthenticatedDashDatasetsNewRoute: AuthenticatedDashDatasetsNewRoute,
+  AuthenticatedDashDatasetsPdfReviewsRoute:
+    AuthenticatedDashDatasetsPdfReviewsRoute,
   AuthenticatedDashAdminIndexRoute: AuthenticatedDashAdminIndexRoute,
   AuthenticatedDashDatasetsIndexRoute: AuthenticatedDashDatasetsIndexRoute,
 }

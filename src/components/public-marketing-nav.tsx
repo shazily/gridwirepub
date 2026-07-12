@@ -1,26 +1,74 @@
 import { Link } from "@tanstack/react-router";
-import { Github } from "lucide-react";
+import { Menu, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { GRIDWIRE_GITHUB_REPO_URL } from "@/lib/github";
+
+const NAV_LINKS = [
+  { to: "/features" as const, label: "Features" },
+  { to: "/feedback" as const, label: "Feedback" },
+] as const;
 
 export function PublicMarketingNav() {
   return (
-    <div className="flex items-center gap-2">
-      <Button variant="ghost" size="sm" asChild>
-        <Link to="/features">Features</Link>
-      </Button>
-      <Button variant="ghost" size="sm" asChild>
-        <Link to="/feedback">Feedback</Link>
-      </Button>
-      <Button variant="ghost" size="sm" asChild>
-        <a href={GRIDWIRE_GITHUB_REPO_URL} target="_blank" rel="noreferrer">
-          <Github className="mr-1.5 h-4 w-4" />
-          GitHub
-        </a>
-      </Button>
-      <Button variant="outline" size="sm" className="bg-background/80 shadow-sm" asChild>
-        <Link to="/auth">Demo sign-in</Link>
-      </Button>
-    </div>
+    <>
+      <div className="hidden items-center gap-1 md:flex md:gap-2">
+        {NAV_LINKS.map((link) => (
+          <Button key={link.to} variant="ghost" size="sm" asChild>
+            <Link to={link.to}>{link.label}</Link>
+          </Button>
+        ))}
+        <Button variant="ghost" size="sm" asChild>
+          <a href={GRIDWIRE_GITHUB_REPO_URL} target="_blank" rel="noreferrer">
+            <Rocket className="mr-1.5 h-4 w-4" />
+            Deploy
+          </a>
+        </Button>
+        <Button size="sm" className="shadow-sm" asChild>
+          <Link to="/auth">Demo sign-in</Link>
+        </Button>
+      </div>
+
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 shrink-0 md:hidden"
+            aria-label="Open navigation menu"
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="right" className="w-[min(100vw-2rem,20rem)]">
+          <SheetHeader>
+            <SheetTitle>Menu</SheetTitle>
+          </SheetHeader>
+          <nav className="mt-6 flex flex-col gap-2">
+            {NAV_LINKS.map((link) => (
+              <Button key={link.to} variant="ghost" className="justify-start" asChild>
+                <Link to={link.to}>{link.label}</Link>
+              </Button>
+            ))}
+            <Button variant="ghost" className="justify-start" asChild>
+              <a href={GRIDWIRE_GITHUB_REPO_URL} target="_blank" rel="noreferrer">
+                <Rocket className="mr-2 h-4 w-4" />
+                Deploy
+              </a>
+            </Button>
+            <Button className="mt-2" asChild>
+              <Link to="/auth">Demo sign-in</Link>
+            </Button>
+          </nav>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

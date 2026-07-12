@@ -16,6 +16,9 @@ export type IngestResult = {
   rowCount: number;
   sheetCount: number;
   deviates: boolean;
+  /** When set, file was staged for PDF human review — not published yet */
+  pendingPdfReview?: boolean;
+  pdfDraftId?: string;
 };
 
 function buildSnapshot(wb: ParsedWorkbook) {
@@ -88,6 +91,110 @@ export async function ingestFileForConnector(opts: {
     .maybeSingle();
   const storageProfile = (orgRow?.storage_config ?? {}) as StorageProfile;
   const maxRowsPerSheet = await getOrgMaxRowsPerSheet(supabaseAdmin, dataset.org_id);
+
+  // PDFs: AI parse + stage for human review (never auto-publish)
+  if (/\.pdf$/i.test(opts.fileName)) {
+    const { scanBytesWithClamav } = await import("@/lib/clamav.server");
+    const bytesBuf = Buffer.from(opts.bytes);
+    const scan = await scanBytesWithClamav(bytesBuf);
+    if (!scan.clean) {
+      throw new Error(`Malware scan failed: ${scan.detail}`);
+    }
+    const {
+      createPdfIngestDraft,
+      createProcessingPdfDraft,
+      schedulePdfIngestJob,
+      raisePdfReadyAlert,
+    } = await import("@/lib/pdf-ingest-draft.server");
+    const { findMatchingPdfTemplate } = await import("@/lib/pdf-templates.server");
+    const template = await findMatchingPdfTemplate({
+      orgId: dataset.org_id,
+      fileName: opts.fileName,
+      connectorId: connector.id,
+    });
+
+    if (template) {
+      const { extractPdfDataWithStructure } = await import("@/lib/pdf-parse.ai.server");
+      const ab = opts.bytes.buffer.slice(
+        opts.bytes.byteOffset,
+        opts.bytes.byteOffset + opts.bytes.byteLength,
+      );
+      const extracted = await extractPdfDataWithStructure(ab, opts.fileName, template.structure_snapshot, {
+        maxRowsPerSheet,
+        orgId: dataset.org_id,
+      });
+      const draft = await createPdfIngestDraft({
+        orgId: dataset.org_id,
+        source: "connector",
+        fileName: opts.fileName,
+        workbook: extracted.workbook,
+        meta: extracted.meta,
+        bytes: bytesBuf,
+        createdBy: actorId,
+        connectorId: connector.id,
+        targetDatasetId: dataset.id,
+      });
+      await supabaseAdmin
+        .from("pdf_ingest_drafts" as never)
+        .update({
+          template_id: template.id,
+          structure_snapshot: template.structure_snapshot as never,
+        } as never)
+        .eq("id", draft.id);
+      await raisePdfReadyAlert({
+        orgId: dataset.org_id,
+        draftId: draft.id,
+        fileName: opts.fileName,
+        source: "connector",
+        kind: "data",
+      });
+      await supabaseAdmin.from("alert_events").insert({
+        org_id: dataset.org_id,
+        event_type: "pdf_review",
+        severity: "info",
+        title: `PDF from connector "${connector.name}" awaiting review`,
+        body: `${opts.fileName} matched template "${template.name}". Review data before publish.`,
+        audience: "workspace",
+      });
+      return {
+        datasetId: dataset.id,
+        versionNo: 0,
+        rowCount: 0,
+        sheetCount: extracted.workbook.sheets.length,
+        deviates: false,
+        pendingPdfReview: true,
+        pdfDraftId: draft.id,
+      };
+    }
+
+    const draft = await createProcessingPdfDraft({
+      orgId: dataset.org_id,
+      source: "connector",
+      fileName: opts.fileName,
+      bytes: bytesBuf,
+      createdBy: actorId,
+      connectorId: connector.id,
+      targetDatasetId: dataset.id,
+    });
+    schedulePdfIngestJob(draft.id, dataset.org_id);
+    await supabaseAdmin.from("alert_events").insert({
+      org_id: dataset.org_id,
+      event_type: "pdf_review",
+      severity: "info",
+      title: `PDF from connector "${connector.name}" — structure discovery`,
+      body: `${opts.fileName} is discovering table layout. Open Datasets → PDF reviews to curate structure.`,
+      audience: "workspace",
+    });
+    return {
+      datasetId: dataset.id,
+      versionNo: 0,
+      rowCount: 0,
+      sheetCount: 0,
+      deviates: false,
+      pendingPdfReview: true,
+      pdfDraftId: draft.id,
+    };
+  }
 
   const wb = parseWorkbookFromBuffer(opts.bytes, opts.fileName, { maxRowsPerSheet });
   const incomingRowCount = wb.sheets.reduce((acc, s) => acc + s.rows.length, 0);

@@ -90,6 +90,7 @@ export async function recordPublishLineage(
     connectorId?: string | null;
     fieldMappings?: { original_name: string; api_name: string; data_type: string }[];
     typeChanges?: { field: string; from: string; to: string }[];
+    sourceMetadata?: Record<string, unknown>;
   },
 ): Promise<void> {
   const datasetNodeId = await upsertLineageNode(admin, {
@@ -105,7 +106,7 @@ export async function recordPublishLineage(
     label: `Version ${opts.versionId.slice(0, 8)}`,
     refType: "dataset_version",
     refId: opts.versionId,
-    metadata: { file_name: opts.fileName },
+    metadata: { file_name: opts.fileName, ...(opts.sourceMetadata ?? {}) },
   });
   const sourceNodeId = await upsertLineageNode(admin, {
     orgId: opts.orgId,
@@ -113,6 +114,7 @@ export async function recordPublishLineage(
     label: opts.fileName,
     refType: opts.connectorId ? "connector" : "source_file",
     refId: opts.connectorId ?? opts.versionId,
+    metadata: opts.sourceMetadata,
   });
 
   await recordLineageEdge(admin, {

@@ -11,7 +11,7 @@
 
 **Do not open public GitHub issues for security vulnerabilities.**
 
-Email a private [GitHub Security Advisory](https://github.com/shazily/gridwirepub/security/advisories/new) with:
+Email **security@gridwire.dev** (or open a private [GitHub Security Advisory](https://github.com/shazily/gridwirepub/security/advisories/new) on this repository) with:
 
 - Description and impact
 - Steps to reproduce

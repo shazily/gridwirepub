@@ -48,7 +48,7 @@ export function slugify(input: string): string {
   );
 }
 
-function dedupe(names: string[]): string[] {
+export function dedupeApiNames(names: string[]): string[] {
   const seen = new Map<string, number>();
   return names.map((n) => {
     const count = seen.get(n) ?? 0;
@@ -57,7 +57,7 @@ function dedupe(names: string[]): string[] {
   });
 }
 
-function inferType(values: unknown[]): ParsedColumn["data_type"] {
+export function inferColumnType(values: unknown[]): ParsedColumn["data_type"] {
   let num = 0;
   let bool = 0;
   let date = 0;
@@ -114,7 +114,7 @@ export function parseWorkbookFromBuffer(
     const headerRow = matrix[0].map((h, i) =>
       h === null || h === undefined || String(h).trim() === "" ? `column_${i + 1}` : String(h),
     );
-    const apiNames = dedupe(headerRow.map(snakeCase));
+    const apiNames = dedupeApiNames(headerRow.map(snakeCase));
     const bodyRows = matrix.slice(1);
     const truncated = bodyRows.length > rowCap;
     const limited = bodyRows.slice(0, rowCap);
@@ -122,7 +122,7 @@ export function parseWorkbookFromBuffer(
     const headers: ParsedColumn[] = headerRow.map((original, i) => ({
       original_name: original,
       api_name: apiNames[i],
-      data_type: inferType(limited.map((r) => r?.[i])),
+      data_type: inferColumnType(limited.map((r) => r?.[i])),
     }));
 
     const rows = limited.map((r) => {

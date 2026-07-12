@@ -22,7 +22,7 @@ export type PlatformFeature = {
   description: string;
   /** Optional bullet highlights for the features page */
   bullets?: string[];
-  badge?: "new";
+  badge?: "new" | "upcoming";
 };
 
 export const PLATFORM_FEATURE_CATEGORIES: PlatformFeatureCategory[] = [
@@ -61,6 +61,20 @@ export const PLATFORM_FEATURES: PlatformFeature[] = [
     description:
       "Upload workbooks with multiple sheets. Headers are normalized to API-safe names; formulas are read as computed values.",
     bullets: ["XLSX, XLS, and CSV", "Per-sheet column detection", "Row limits configurable per org"],
+  },
+  {
+    id: "pdf-parser",
+    category: "ingestion",
+    title: "AI PDF table parsing",
+    description:
+      "PDFs become APIs without dumping the whole document into a model first. Map tables from a cheap AI structure pass, approve the layout, then load full rows — with reusable templates for recurring SFTP and folder drops.",
+    bullets: [
+      "Structure discovery on a page/char budget, then full extract after approve",
+      "Deterministic text extract for bank-style grids (ISO, US, and month-name dates)",
+      "Human review gate + saved structure templates for recurring PDFs",
+      "Same allowlist, ClamAV, lineage, and field protection as spreadsheet ingest",
+    ],
+    badge: "new",
   },
   {
     id: "macro-detection",
@@ -270,9 +284,10 @@ export const PLATFORM_FEATURES: PlatformFeature[] = [
 
 /** Curated subset for the marketing homepage hero slideshow (key platform capabilities) */
 export const MARKETING_SLIDESHOW_FEATURE_IDS: string[] = [
-  "parse-spreadsheets",
-  "versioning-diffs",
   "field-protection",
+  "parse-spreadsheets",
+  "pdf-parser",
+  "versioning-diffs",
   "api-keys",
   "openapi-swagger",
   "connectors",

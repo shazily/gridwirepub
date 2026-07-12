@@ -37,7 +37,7 @@ export const Route = createFileRoute("/_authenticated/_dash/help")({
 const faqs = [
   {
     q: "How do I turn a spreadsheet into an API?",
-    a: "Go to Datasets → New dataset, upload a CSV or spreadsheet, review the detected columns and per-field protection (clear, mask, hash, or encrypt), then publish. Gridwire mints a secure, versioned read endpoint for that dataset.",
+    a: "Go to Datasets → New dataset, upload a CSV, spreadsheet, or PDF. Spreadsheets parse locally; PDFs use AI table extraction and always require human review before publish. Then set per-field protection (clear, mask, hash, or encrypt) and publish. Gridwire mints a secure, versioned read endpoint for that dataset. Email and connector PDF pulls appear under Datasets → PDF reviews.",
   },
   {
     q: "How do consumers authenticate to a dataset API?",

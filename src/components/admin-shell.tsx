@@ -14,6 +14,7 @@ import {
   Mail,
   Bell,
   Layers,
+  BrainCircuit,
 } from "lucide-react";
 import { useOrg, canManage } from "@/hooks/use-org";
 import { PageNav } from "@/components/page-nav";
@@ -29,6 +30,7 @@ const adminNav = [
   { to: "/admin/security", label: "Security", icon: Shield },
   { to: "/admin/storage", label: "Storage", icon: HardDrive },
   { to: "/admin/authentication", label: "Authentication", icon: KeyRound },
+  { to: "/admin/ai", label: "AI / PDF", icon: BrainCircuit },
   { to: "/admin/email-ingest", label: "Email ingest", icon: Mail },
   { to: "/admin/alerts", label: "Alerts", icon: Bell },
   { to: "/admin/api-keys", label: "API keys", icon: KeyRound },

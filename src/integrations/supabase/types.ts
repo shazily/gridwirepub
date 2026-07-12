@@ -178,6 +178,65 @@ export type Database = {
           },
         ]
       }
+      llm_api_keys: {
+        Row: {
+          base_url: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          key_ciphertext: string
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          model: string | null
+          name: string
+          org_id: string
+          provider: string
+          revoked_at: string | null
+          scopes: string[]
+        }
+        Insert: {
+          base_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key_ciphertext: string
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          model?: string | null
+          name: string
+          org_id: string
+          provider?: string
+          revoked_at?: string | null
+          scopes?: string[]
+        }
+        Update: {
+          base_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key_ciphertext?: string
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          model?: string | null
+          name?: string
+          org_id?: string
+          provider?: string
+          revoked_at?: string | null
+          scopes?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "llm_api_keys_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_events: {
         Row: {
           action: string
@@ -791,6 +850,7 @@ export type Database = {
       }
       organizations: {
         Row: {
+          ai_config: Json
           created_at: string
           created_by: string
           id: string
@@ -802,6 +862,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_config?: Json
           created_at?: string
           created_by?: string
           id?: string
@@ -813,6 +874,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_config?: Json
           created_at?: string
           created_by?: string
           id?: string

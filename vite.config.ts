@@ -24,7 +24,18 @@ export default defineConfig(({ mode }) => {
       viteReact(),
       nitro({
         externals: {
-          external: ["parquetjs", "lzo", "snappyjs", "brotli", "nodemailer"],
+          // Keep pdfjs out of the Nitro bundle so its worker resolves from node_modules
+          // (bundling rewrites workerSrc to /.output/server/_libs/pdf.worker.mjs which is missing).
+          external: [
+            "parquetjs",
+            "lzo",
+            "snappyjs",
+            "brotli",
+            "nodemailer",
+            "pdfjs-dist",
+            "pdfjs-dist/legacy/build/pdf.mjs",
+            "pdfjs-dist/legacy/build/pdf.worker.mjs",
+          ],
         },
       }),
     ],

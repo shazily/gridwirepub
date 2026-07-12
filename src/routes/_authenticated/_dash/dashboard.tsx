@@ -50,10 +50,16 @@ function Dashboard() {
   });
 
   const cards = [
-    { label: "Datasets", value: stats.data?.datasets ?? 0, icon: Database },
-    { label: "Published APIs", value: stats.data?.published ?? 0, icon: ArrowUpRight },
-    { label: "Active API keys", value: stats.data?.keys ?? 0, icon: KeyRound },
-    { label: "API calls logged", value: stats.data?.events ?? 0, icon: Activity },
+    { label: "Datasets", value: stats.data?.datasets ?? 0, icon: Database, to: "/datasets" as const },
+    {
+      label: "Published APIs",
+      value: stats.data?.published ?? 0,
+      icon: ArrowUpRight,
+      to: "/datasets" as const,
+      search: { status: "published" } as const,
+    },
+    { label: "Active API keys", value: stats.data?.keys ?? 0, icon: KeyRound, to: "/admin/api-keys" as const },
+    { label: "API calls logged", value: stats.data?.events ?? 0, icon: Activity, to: "/admin/usage" as const },
   ];
 
   return (
@@ -74,17 +80,24 @@ function Dashboard() {
         {cards.map((c) => {
           const Icon = c.icon;
           return (
-            <Card key={c.label}>
-              <CardContent className="flex items-center gap-4 p-5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
-                  <Icon className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{c.value}</div>
-                  <div className="text-xs text-muted-foreground">{c.label}</div>
-                </div>
-              </CardContent>
-            </Card>
+            <Link
+              key={c.label}
+              to={c.to}
+              {...("search" in c && c.search ? { search: c.search } : {})}
+              className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Card className="h-full transition-colors group-hover:border-primary/50 group-hover:bg-accent/30">
+                <CardContent className="flex items-center gap-4 p-5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15">
+                    <Icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold">{c.value}</div>
+                    <div className="text-xs text-muted-foreground">{c.label}</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           );
         })}
       </div>

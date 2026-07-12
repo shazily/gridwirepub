@@ -23,12 +23,21 @@ jobs:
         run: npm ci
 
       - name: Run unit and security tests
-        run: npm test -- --exclude tests/platform
+        run: npm test -- --exclude tests/platform/**
 
   platform:
     runs-on: ubuntu-latest
     if: false # optional live-portal checks; enable when CI stack is available
     steps:
       - uses: actions/checkout@v4
-      - run: npm ci
-      - run: npm test -- tests/platform
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run platform tests
+        run: npm test -- tests/platform

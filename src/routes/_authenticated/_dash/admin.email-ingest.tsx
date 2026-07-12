@@ -589,7 +589,8 @@ function AdminEmailIngestPage() {
           <CardHeader>
             <CardTitle className="text-base">Ingest notification emails</CardTitle>
             <CardDescription>
-              Get emailed when an ingest succeeds or fails — separate from the in-app bell feed.
+              Workspace receivers get emailed on success or failure (in addition to the in-app bell).
+              On rejection, the original sender is also emailed automatically with the rejection reason.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

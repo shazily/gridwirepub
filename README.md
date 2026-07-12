@@ -1,8 +1,8 @@
 # Gridwire
 
-**Turn spreadsheets into secure, documented REST APIs — on your own infrastructure.**
+**Turn spreadsheets and PDFs into secure, documented REST APIs — on your own infrastructure.**
 
-Gridwire is an MIT-licensed, self-hostable portal: upload Excel/CSV, map fields, publish versioned APIs with API keys, masking, connectors, and multi-tenant workspaces. This repository is the **public distribution** for operators who deploy Gridwire for their organization.
+Gridwire is an MIT-licensed, self-hostable portal: upload Excel/CSV/PDF, map fields, publish versioned APIs with API keys, masking, connectors, email ingest, and multi-tenant workspaces. This repository is the **public distribution** for operators who deploy Gridwire for their organization.
 
 ## Quickstart (recommended)
 

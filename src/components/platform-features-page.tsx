@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PublicSiteFooter, PublicSiteHeader } from "@/components/public-chrome";
 import { PublicMarketingNav } from "@/components/public-marketing-nav";
+import { TrustBoundarySection } from "@/components/trust-boundary-section";
 import {
   FEATURE_SPOTLIGHTS,
   PLATFORM_FEATURE_CATEGORIES,
@@ -19,6 +20,7 @@ import {
   Globe,
   HardDrive,
   KeyRound,
+  FileScan,
   Mail,
   Network,
   ShieldCheck,
@@ -36,6 +38,7 @@ const CATEGORY_ICONS: Record<PlatformFeatureCategoryId, LucideIcon> = {
 };
 
 const FEATURE_ICONS: Partial<Record<string, LucideIcon>> = {
+  "pdf-parser": FileScan,
   "email-ingest": Mail,
   connectors: Cable,
   "lineage-graph": GitBranch,
@@ -69,7 +72,7 @@ function FeatureSpotlightSection({
   return (
     <section
       id={spotlight.id === "lineage" ? "lineage-deep-dive" : "email-ingest-deep-dive"}
-      className="scroll-mt-24 rounded-2xl border border-primary/25 bg-card/70 p-6 backdrop-blur-sm sm:p-8"
+      className="scroll-mt-24 rounded-2xl border border-primary/25 bg-card/70 p-4 backdrop-blur-sm sm:p-8"
     >
       <div className="flex items-start gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/15">
@@ -111,7 +114,7 @@ export function PlatformFeaturesPage() {
 
       <main className="relative flex-1">
         <div className="grid-bg absolute inset-0 opacity-20" aria-hidden />
-        <div className="relative mx-auto max-w-6xl px-6 py-10 sm:py-14">
+        <div className="relative mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-14">
           <div className="max-w-3xl">
             <p className="text-sm font-medium text-primary">Platform capabilities</p>
             <h1 className="font-display mt-2 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
@@ -121,26 +124,29 @@ export function PlatformFeaturesPage() {
               Self-hostable spreadsheet-to-API platform with governed ingest, field-level security,
               interactive lineage, and a full admin console — no proprietary cloud lock-in.
             </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Button size="lg" className="shadow-lg shadow-primary/20" asChild>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Button size="lg" className="w-full shadow-lg shadow-primary/20 sm:w-auto" asChild>
                 <Link to="/auth">
                   Try the demo <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="bg-background/60" asChild>
+              <Button size="lg" variant="outline" className="w-full bg-background/60 sm:w-auto" asChild>
                 <Link to="/">Back to home</Link>
               </Button>
             </div>
           </div>
 
-          <nav className="mt-10 flex flex-wrap gap-2" aria-label="Feature categories">
+          <nav
+            className="-mx-4 mt-10 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0"
+            aria-label="Feature categories"
+          >
             {PLATFORM_FEATURE_CATEGORIES.map((cat) => {
               const Icon = CATEGORY_ICONS[cat.id];
               return (
                 <a
                   key={cat.id}
                   href={`#${cat.id}`}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-card/60 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border/80 bg-card/60 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
                 >
                   <Icon className="h-3.5 w-3.5" />
                   {cat.title}
@@ -148,6 +154,10 @@ export function PlatformFeaturesPage() {
               );
             })}
           </nav>
+
+          <div className="mt-12">
+            <TrustBoundarySection />
+          </div>
 
           <div className="mt-12 space-y-10">
             {FEATURE_SPOTLIGHTS.map((spotlight) => (
@@ -192,6 +202,14 @@ export function PlatformFeaturesPage() {
                                   New
                                 </Badge>
                               )}
+                              {feature.badge === "upcoming" && (
+                                <Badge
+                                  variant="outline"
+                                  className="border-primary/40 bg-primary/10 text-[10px] uppercase tracking-wide text-primary"
+                                >
+                                  Upcoming
+                                </Badge>
+                              )}
                             </div>
                             <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground sm:text-sm">
                               {feature.description}
@@ -222,7 +240,7 @@ export function PlatformFeaturesPage() {
               Spin up a demo workspace, upload a spreadsheet, explore the lineage graph, and call your
               dataset with a scoped API key.
             </p>
-            <Button size="lg" className="mt-6 shadow-lg shadow-primary/20" asChild>
+            <Button size="lg" className="mt-6 w-full shadow-lg shadow-primary/20 sm:w-auto" asChild>
               <Link to="/auth">
                 Open demo workspace <ArrowRight className="h-4 w-4" />
               </Link>

@@ -6,41 +6,65 @@ import { PageHeader } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Database, Plus, FileSpreadsheet } from "lucide-react";
+import { Database, Plus, FileSpreadsheet, FileScan } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/_dash/datasets/")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    status: typeof s.status === "string" ? s.status : undefined,
+  }),
   component: DatasetsList,
 });
 
 function DatasetsList() {
   const { currentOrg } = useOrg();
+  const { status: statusFilter } = Route.useSearch();
   const orgId = currentOrg?.id;
 
   const datasets = useQuery({
-    queryKey: ["datasets", orgId],
+    queryKey: ["datasets", orgId, statusFilter],
     enabled: !!orgId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("datasets")
         .select("id, name, description, status, source_type, updated_at, dataset_versions(row_count, sheet_count, version_no)")
         .eq("org_id", orgId!)
         .order("updated_at", { ascending: false });
+      if (statusFilter) q = q.eq("status", statusFilter);
+      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
   });
 
+  const isPublishedFilter = statusFilter === "published";
+
   return (
     <div>
       <PageHeader
-        title="Datasets"
-        description="Each dataset is a published REST API backed by your spreadsheet."
+        title={isPublishedFilter ? "Published APIs" : "Datasets"}
+        description={
+          isPublishedFilter
+            ? "Datasets with a live published REST API."
+            : "Each dataset is a published REST API backed by your spreadsheet or reviewed PDF tables."
+        }
         action={
-          <Button asChild>
-            <Link to="/datasets/new">
-              <Plus className="h-4 w-4" /> New dataset
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {isPublishedFilter ? (
+              <Button variant="outline" asChild>
+                <Link to="/datasets">All datasets</Link>
+              </Button>
+            ) : null}
+            <Button variant="outline" asChild>
+              <Link to="/datasets/pdf-reviews">
+                <FileScan className="h-4 w-4" /> PDF reviews
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link to="/datasets/new">
+                <Plus className="h-4 w-4" /> New dataset
+              </Link>
+            </Button>
+          </div>
         }
       />
 
@@ -61,7 +85,14 @@ function DatasetsList() {
                       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15">
                         <Database className="h-4 w-4 text-primary" />
                       </div>
-                      <Badge variant={d.status === "published" ? "default" : "secondary"} className="capitalize">
+                      <Badge
+                        variant={d.status === "published" ? "default" : "secondary"}
+                        className={
+                          d.status === "archived"
+                            ? "border-warning/40 bg-warning/10 capitalize text-warning"
+                            : "capitalize"
+                        }
+                      >
                         {d.status}
                       </Badge>
                     </div>
@@ -89,8 +120,12 @@ function DatasetsList() {
               <Database className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <div className="font-medium">No datasets yet</div>
-              <p className="text-sm text-muted-foreground">Upload your first spreadsheet to generate an API.</p>
+              <div className="font-medium">{isPublishedFilter ? "No published APIs yet" : "No datasets yet"}</div>
+              <p className="text-sm text-muted-foreground">
+                {isPublishedFilter
+                  ? "Publish a dataset to expose its REST API."
+                  : "Upload your first spreadsheet to generate an API."}
+              </p>
             </div>
             <Button asChild>
               <Link to="/datasets/new">

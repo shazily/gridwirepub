@@ -14,7 +14,15 @@ import {
   type TemplateSchema,
 } from "@/lib/email-template-validation";
 import { parseWorkbookFromBuffer } from "@/lib/spreadsheet";
+import { isPdfFileName } from "@/lib/ingest-parse";
+import {
+  assertPdfIngestCapacity,
+  createPdfIngestDraft,
+  raisePdfReadyAlert,
+} from "@/lib/pdf-ingest-draft.server";
+import { findMatchingPdfTemplate } from "@/lib/pdf-templates.server";
 import { getOrgMaxRowsPerSheet, getOrgMaxUploadBytes } from "@/lib/quota.server";
+import { logServer, logServerError } from "@/lib/user-facing-error";
 
 type InboundAttachment = {
   name: string;
@@ -22,7 +30,7 @@ type InboundAttachment = {
   contentBase64: string;
 };
 
-const ALLOWED_EXT = [".xlsx", ".xls", ".csv"];
+const ALLOWED_EXT = [".xlsx", ".xls", ".csv", ".pdf"];
 
 /** Upper-bound decoded byte size without allocating the full buffer. */
 function estimatedBase64DecodedBytes(base64: string): number {
@@ -165,43 +173,6 @@ export async function processInboundPostmarkEmail(args: {
     );
   }
 
-  const { data: templates } = await supabaseAdmin
-    .from("email_ingest_templates")
-    .select("*")
-    .eq("org_id", orgId)
-    .eq("active", true);
-
-  const { template: matchedTemplate, rejectionDetail } = findMatchingIngestTemplate(
-    templates ?? [],
-    args.subject,
-    attachmentNames,
-  );
-
-  if (!matchedTemplate) {
-    return rejectMessage(
-      msgRow.id,
-      orgId,
-      "rejected_template",
-      rejectionDetail || "No matching ingest template",
-      "email_ingest.rejected_template",
-      { subject: args.subject, attachments: attachmentNames },
-      ingestNotify,
-    );
-  }
-
-  const schema = (matchedTemplate.schema_snapshot ?? {}) as TemplateSchema;
-  if (!schema.columns?.length) {
-    return rejectMessage(
-      msgRow.id,
-      orgId,
-      "rejected_template",
-      "Template has no uploaded column schema",
-      "email_ingest.rejected_template",
-      { template_id: matchedTemplate.id },
-      ingestNotify,
-    );
-  }
-
   const excelAttachments = args.attachments.filter((a) =>
     ALLOWED_EXT.some((ext) => a.name.toLowerCase().endsWith(ext)),
   );
@@ -210,14 +181,14 @@ export async function processInboundPostmarkEmail(args: {
       msgRow.id,
       orgId,
       "rejected_no_attachment",
-      "No Excel/CSV attachment",
+      "No Excel/CSV/PDF attachment",
       "email_ingest.rejected_no_attachment",
-      { template_id: matchedTemplate.id },
+      {},
       ingestNotify,
     );
   }
 
-  const primary = excelAttachments[0];
+  const primary = excelAttachments[0]!;
   const maxUploadBytes = await getOrgMaxUploadBytes(supabaseAdmin, orgId);
   const maxRowsPerSheet = await getOrgMaxRowsPerSheet(supabaseAdmin, orgId);
 
@@ -255,6 +226,171 @@ export async function processInboundPostmarkEmail(args: {
         { ...ingestNotify, attachmentName: att.name },
       );
     }
+  }
+
+  // PDFs: only when a curated PDF structure template matches the filename.
+  // No structure discovery and no one-shot AI parse on email.
+  if (isPdfFileName(primary.name)) {
+    const pdfTemplate = await findMatchingPdfTemplate({
+      orgId,
+      fileName: primary.name,
+    });
+    if (!pdfTemplate) {
+      return rejectMessage(
+        msgRow.id,
+        orgId,
+        "rejected_template",
+        `No curated PDF structure template matches "${primary.name}". Upload the PDF in the portal once, approve structure, and save a template — then email ingest can reuse it.`,
+        "email_ingest.rejected_pdf_template",
+        { attachment: primary.name },
+        ingestNotify,
+      );
+    }
+
+    try {
+      await assertPdfIngestCapacity(orgId, bytes.byteLength);
+      const { extractPdfDataWithStructure } = await import("@/lib/pdf-parse.ai.server");
+      const ab = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+      const extracted = await extractPdfDataWithStructure(
+        ab,
+        primary.name,
+        pdfTemplate.structure_snapshot,
+        { maxRowsPerSheet, orgId },
+      );
+
+      let storageRef: string | null = null;
+      try {
+        storageRef = await storeEmailAttachment({
+          orgId,
+          messageId: msgRow.id,
+          fileName: primary.name,
+          bytes,
+        });
+      } catch {
+        // best-effort
+      }
+
+      const draft = await createPdfIngestDraft({
+        orgId,
+        source: "email",
+        fileName: primary.name,
+        workbook: extracted.workbook,
+        meta: extracted.meta,
+        bytes,
+        emailMessageId: msgRow.id,
+        targetDatasetId: pdfTemplate.target_dataset_id,
+      });
+
+      await supabaseAdmin
+        .from("pdf_ingest_drafts" as never)
+        .update({
+          template_id: pdfTemplate.id,
+          structure_snapshot: pdfTemplate.structure_snapshot as never,
+        } as never)
+        .eq("id", draft.id);
+
+      await supabaseAdmin
+        .from("email_ingest_messages")
+        .update({
+          status: "pending_pdf_review",
+          rejection_reason: null,
+          template_id: null,
+          attachment_name: primary.name,
+          scan_detail: scanDetail,
+          attachment_storage_ref: storageRef,
+        })
+        .eq("id", msgRow.id);
+
+      await raisePdfReadyAlert({
+        orgId,
+        draftId: draft.id,
+        fileName: primary.name,
+        source: "email",
+        kind: "data",
+      });
+
+      await logSystemAuditEvent({
+        orgId,
+        action: "pdf_ingest.received",
+        resourceType: "pdf_ingest_draft",
+        resourceId: draft.id,
+        actorLabel: "system:email-ingest",
+        metadata: {
+          message_id: msgRow.id,
+          pdf_template_id: pdfTemplate.id,
+          pdf_template_name: pdfTemplate.name,
+          file_name: primary.name,
+          draft_id: draft.id,
+          sheet_count: extracted.workbook.sheets.length,
+        },
+      });
+
+      logServer("email-ingest", "info", `PDF email matched template "${pdfTemplate.name}"`, {
+        orgId,
+        draftId: draft.id,
+        fileName: primary.name,
+        templateId: pdfTemplate.id,
+      });
+
+      return {
+        status: "pending_pdf_review",
+        messageId: msgRow.id,
+        detail: `PDF matched template "${pdfTemplate.name}" — staged for review (${draft.id})`,
+      };
+    } catch (err) {
+      logServerError("email-ingest", `PDF email extract failed for "${primary.name}"`, err, {
+        orgId,
+        templateId: pdfTemplate.id,
+      });
+      return rejectMessage(
+        msgRow.id,
+        orgId,
+        "rejected_parse_error",
+        err instanceof Error
+          ? err.message
+          : "Could not extract PDF tables using the curated structure template",
+        "email_ingest.rejected_parse",
+        { attachment: primary.name, pdf_template_id: pdfTemplate.id },
+        ingestNotify,
+      );
+    }
+  }
+
+  const { data: templates } = await supabaseAdmin
+    .from("email_ingest_templates")
+    .select("*")
+    .eq("org_id", orgId)
+    .eq("active", true);
+
+  const { template: matchedTemplate, rejectionDetail } = findMatchingIngestTemplate(
+    templates ?? [],
+    args.subject,
+    attachmentNames,
+  );
+
+  if (!matchedTemplate) {
+    return rejectMessage(
+      msgRow.id,
+      orgId,
+      "rejected_template",
+      rejectionDetail || "No matching ingest template",
+      "email_ingest.rejected_template",
+      { subject: args.subject, attachments: attachmentNames },
+      ingestNotify,
+    );
+  }
+
+  const schema = (matchedTemplate.schema_snapshot ?? {}) as TemplateSchema;
+  if (!schema.columns?.length) {
+    return rejectMessage(
+      msgRow.id,
+      orgId,
+      "rejected_template",
+      "Template has no uploaded column schema",
+      "email_ingest.rejected_template",
+      { template_id: matchedTemplate.id },
+      ingestNotify,
+    );
   }
 
   let parsed;

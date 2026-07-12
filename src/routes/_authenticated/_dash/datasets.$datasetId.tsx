@@ -4,11 +4,19 @@ import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg, canEdit, canManage } from "@/hooks/use-org";
 import { slugify } from "@/lib/spreadsheet";
+import {
+  archiveDatasetFn,
+  permanentlyDeleteDatasetFn,
+  restoreDatasetFn,
+} from "@/lib/dataset-lifecycle.functions";
 import { PageHeader } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Select,
@@ -17,9 +25,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/lib/audit.functions";
-import { Copy, Upload, ArrowLeft, GitBranch, ShieldAlert, Eye, EyeOff, Globe, Lock, BookOpen, Activity, KeyRound, Network } from "lucide-react";
+import { toUserFacingMessage } from "@/lib/user-facing-error";
+import {
+  Copy,
+  Upload,
+  GitBranch,
+  ShieldAlert,
+  Eye,
+  EyeOff,
+  Globe,
+  Lock,
+  BookOpen,
+  Activity,
+  KeyRound,
+  Network,
+  Archive,
+  ArchiveRestore,
+  Trash2,
+  Loader2,
+} from "lucide-react";
 import { LineageGraph } from "@/components/lineage-graph";
 
 type Masking = "none" | "mask" | "hash" | "encrypt";
@@ -197,10 +234,74 @@ function DatasetDetail() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to update field"),
   });
 
+  const [lifecycleReason, setLifecycleReason] = useState("");
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const archiveMut = useMutation({
+    mutationFn: async () => {
+      if (!currentOrg) throw new Error("Select an organization first");
+      return archiveDatasetFn({
+        data: { orgId: currentOrg.id, datasetId, reason: lifecycleReason || undefined },
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["dataset", datasetId] });
+      qc.invalidateQueries({ queryKey: ["datasets"] });
+      setArchiveOpen(false);
+      setLifecycleReason("");
+      toast.success("Dataset archived — API is offline. Event logged to Admin → Audit.");
+    },
+    onError: (e) => toast.error(toUserFacingMessage(e, "Failed to archive dataset")),
+  });
+
+  const restoreMut = useMutation({
+    mutationFn: async () => {
+      if (!currentOrg) throw new Error("Select an organization first");
+      return restoreDatasetFn({
+        data: { orgId: currentOrg.id, datasetId, reason: lifecycleReason || undefined },
+      });
+    },
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ["dataset", datasetId] });
+      qc.invalidateQueries({ queryKey: ["datasets"] });
+      setLifecycleReason("");
+      toast.success(
+        res.status === "published"
+          ? "Dataset restored — API is live again. Event logged to Admin → Audit."
+          : "Dataset restored as draft. Event logged to Admin → Audit.",
+      );
+    },
+    onError: (e) => toast.error(toUserFacingMessage(e, "Failed to restore dataset")),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: async () => {
+      if (!currentOrg) throw new Error("Select an organization first");
+      return permanentlyDeleteDatasetFn({
+        data: {
+          orgId: currentOrg.id,
+          datasetId,
+          confirmName: deleteConfirmName,
+          reason: lifecycleReason || undefined,
+        },
+      });
+    },
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ["datasets"] });
+      setDeleteOpen(false);
+      toast.success(`Permanently deleted “${res.deleted.name}”. Full snapshot logged to Admin → Audit.`);
+      navigate({ to: "/datasets" });
+    },
+    onError: (e) => toast.error(toUserFacingMessage(e, "Failed to delete dataset")),
+  });
+
   if (ds.isLoading) return <p className="text-sm text-muted-foreground">Loading…</p>;
   if (!ds.data) return <p className="text-sm text-muted-foreground">Dataset not found.</p>;
 
   const isPublic = ds.data.api_access === "public";
+  const isArchived = ds.data.status === "archived";
   const versions = (ds.data.dataset_versions ?? []).sort((a, b) => b.version_no - a.version_no);
   const sheetFields = (fields.data ?? []).filter((f) => f.sheet_name === sheet);
   const base = `${origin}/api/v1/datasets/${datasetId}`;
@@ -228,16 +329,25 @@ function DatasetDetail() {
         backLabel="Datasets"
         crumbs={[{ label: "Datasets", to: "/datasets" }, { label: ds.data.name }]}
         action={
-          canEdit(role) && (
+          canEdit(role) && !isArchived ? (
             <Button variant="outline" onClick={() => navigate({ to: "/datasets/new", search: { datasetId } })}>
               <Upload className="h-4 w-4" /> Upload new version
             </Button>
-          )
+          ) : undefined
         }
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Badge variant={ds.data.status === "published" ? "default" : "secondary"} className="capitalize">{ds.data.status}</Badge>
+        <Badge
+          variant={ds.data.status === "published" ? "default" : "secondary"}
+          className={
+            isArchived
+              ? "border-warning/40 bg-warning/10 capitalize text-warning"
+              : "capitalize"
+          }
+        >
+          {ds.data.status}
+        </Badge>
         <Badge variant={isPublic ? "outline" : "default"} className="gap-1">
           {isPublic ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
           {isPublic ? "public" : "secure"}
@@ -266,6 +376,35 @@ function DatasetDetail() {
           </Button>
         )}
       </div>
+
+      {isArchived && (
+        <Card className="mb-4 border-warning/40 bg-warning/5">
+          <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm">
+            <Archive className="h-4 w-4 text-warning" />
+            <div className="flex-1">
+              <p className="font-medium">This dataset is archived</p>
+              <p className="text-muted-foreground">
+                The live API returns not published. Restore to bring it back, or permanently delete it.
+              </p>
+            </div>
+            {editable && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={restoreMut.isPending}
+                onClick={() => restoreMut.mutate()}
+              >
+                {restoreMut.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ArchiveRestore className="h-4 w-4" />
+                )}
+                Restore
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {versions[0]?.diff_summary && (versions[0].diff_summary as { deviates?: boolean }).deviates && (
         <div className="mb-4 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
@@ -601,9 +740,146 @@ function DatasetDetail() {
           </TabsContent>
         )}
       </Tabs>
+
+      {(editable || manage) && (
+        <Card className="mt-8 border-destructive/30">
+          <CardHeader>
+            <CardTitle className="text-base text-destructive">Danger zone</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="lifecycle-reason">Reason (optional, written to audit log)</Label>
+              <Textarea
+                id="lifecycle-reason"
+                value={lifecycleReason}
+                onChange={(e) => setLifecycleReason(e.target.value)}
+                placeholder="e.g. Superseded by Q2 statement · duplicate · compliance purge"
+                className="min-h-[72px]"
+              />
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              {editable && !isArchived && (
+                <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline">
+                      <Archive className="h-4 w-4" /> Archive dataset
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Archive “{ds.data.name}”?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        The public API will stop serving this dataset immediately. Data and versions are kept —
+                        you can restore later. This action is recorded in Admin → Audit.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={(e) => {
+                          e.preventDefault();
+                          archiveMut.mutate();
+                        }}
+                        disabled={archiveMut.isPending}
+                      >
+                        {archiveMut.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Archive"
+                        )}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+
+              {editable && isArchived && (
+                <Button
+                  variant="outline"
+                  disabled={restoreMut.isPending}
+                  onClick={() => restoreMut.mutate()}
+                >
+                  {restoreMut.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ArchiveRestore className="h-4 w-4" />
+                  )}
+                  Restore dataset
+                </Button>
+              )}
+
+              {manage && (
+                <AlertDialog
+                  open={deleteOpen}
+                  onOpenChange={(open) => {
+                    setDeleteOpen(open);
+                    if (!open) setDeleteConfirmName("");
+                  }}
+                >
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive">
+                      <Trash2 className="h-4 w-4" /> Delete permanently
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Permanently delete “{ds.data.name}”?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This removes all versions, fields, and rows. Connectors and PDF drafts that pointed here
+                        will be unlinked. This cannot be undone. A full snapshot is written to the audit log
+                        before deletion.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="space-y-1.5 py-2">
+                      <Label htmlFor="delete-confirm">
+                        Type <span className="font-mono font-medium">{ds.data.name}</span> to confirm
+                      </Label>
+                      <Input
+                        id="delete-confirm"
+                        value={deleteConfirmName}
+                        onChange={(e) => setDeleteConfirmName(e.target.value)}
+                        autoComplete="off"
+                      />
+                    </div>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        className={buttonDestructiveClass}
+                        disabled={
+                          deleteMut.isPending || deleteConfirmName.trim() !== ds.data.name
+                        }
+                        onClick={(e) => {
+                          e.preventDefault();
+                          deleteMut.mutate();
+                        }}
+                      >
+                        {deleteMut.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Delete forever"
+                        )}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+
+            {!manage && (
+              <p className="text-xs text-muted-foreground">
+                Permanent deletion requires owner or admin. You can still archive if you have edit access.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
+
+const buttonDestructiveClass =
+  "bg-destructive text-destructive-foreground hover:bg-destructive/90";
 
 function formatCell(v: unknown): string {
   if (v === null || v === undefined) return "—";

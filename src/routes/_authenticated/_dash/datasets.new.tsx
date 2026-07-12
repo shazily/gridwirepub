@@ -2,7 +2,16 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo, useState, useEffect } from "react";
 import { useOrg, canEdit, isContributor } from "@/hooks/use-org";
 import { parseWorkbook, detectPii, type ParsedWorkbook, MAX_ROWS_PER_SHEET } from "@/lib/spreadsheet";
+import { isPdfFileName, type PdfParseConfidence } from "@/lib/ingest-file-types";
 import { publishDataset } from "@/lib/publish.functions";
+import { getPdfIngestDraftFn, startPdfIngest, publishPdfDraft, approvePdfStructureFn } from "@/lib/pdf-ingest.functions";
+import {
+  includedStructureTables,
+  normalizeStructureSnapshot,
+  PDF_STRUCTURE_SAMPLE_ROWS,
+  type PdfStructureSnapshot,
+  type PdfStructureTable,
+} from "@/lib/pdf-structure";
 import type { PublishField } from "@/lib/publish";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/app-shell";
@@ -24,6 +33,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { toUserFacingMessage } from "@/lib/user-facing-error";
 import {
   UploadCloud,
   FileSpreadsheet,
@@ -32,18 +42,38 @@ import {
   ArrowRight,
   ArrowLeft,
   Check,
+  FileScan,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/_dash/datasets/new")({
   validateSearch: (s: Record<string, unknown>) => ({
     datasetId: typeof s.datasetId === "string" ? s.datasetId : undefined,
+    pdfDraftId: typeof s.pdfDraftId === "string" ? s.pdfDraftId : undefined,
   }),
   component: NewDatasetWizard,
 });
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== "string") {
+        reject(new Error("Failed to read file"));
+        return;
+      }
+      const comma = result.indexOf(",");
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
 type SheetState = { name: string; included: boolean };
 
-const STEPS = ["Upload", "Sheets", "Fields", "Load mode", "Review"];
+const EXCEL_STEPS = ["Upload", "Sheets", "Fields", "Load mode", "Review"];
+const PDF_STEPS = ["Upload", "Structure", "Data", "Fields", "Load mode", "Review"];
 
 export const HASH_ALGOS: { value: NonNullable<PublishField["hash_algo"]>; label: string }[] = [
   { value: "sha256", label: "SHA-256" },
@@ -56,7 +86,7 @@ export const HASH_ALGOS: { value: NonNullable<PublishField["hash_algo"]>; label:
 
 function NewDatasetWizard() {
   const navigate = useNavigate();
-  const { datasetId: existingDatasetId } = Route.useSearch();
+  const { datasetId: existingDatasetId, pdfDraftId: searchDraftId } = Route.useSearch();
   const { currentOrg, role } = useOrg();
   const [step, setStep] = useState(0);
   const [parsing, setParsing] = useState(false);
@@ -73,6 +103,25 @@ function NewDatasetWizard() {
   const [sourceFile, setSourceFile] = useState<File | null>(null);
   const [maxUploadBytes, setMaxUploadBytes] = useState(52_428_800);
   const [maxRowsPerSheet, setMaxRowsPerSheet] = useState(MAX_ROWS_PER_SHEET);
+  const [pdfDraftId, setPdfDraftId] = useState<string | null>(searchDraftId ?? null);
+  const [pdfConfidence, setPdfConfidence] = useState<PdfParseConfidence | null>(null);
+  const [draftHydrated, setDraftHydrated] = useState(false);
+
+  const [pdfJobStatus, setPdfJobStatus] = useState<"idle" | "processing" | "failed">("idle");
+  const [pdfJobError, setPdfJobError] = useState<string | null>(null);
+  const [pdfStructure, setPdfStructure] = useState<PdfStructureSnapshot | null>(null);
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [templatePattern, setTemplatePattern] = useState("*.pdf");
+  const [approvingStructure, setApprovingStructure] = useState(false);
+  const [extractProgress, setExtractProgress] = useState<{
+    percent: number;
+    label: string;
+  } | null>(null);
+
+  const isPdfWizard = Boolean(pdfDraftId || pdfStructure);
+  const STEPS = isPdfWizard ? PDF_STEPS : EXCEL_STEPS;
+  const lastStep = STEPS.length - 1;
 
   useEffect(() => {
     if (!currentOrg?.id) return;
@@ -88,6 +137,231 @@ function NewDatasetWizard() {
       });
   }, [currentOrg?.id]);
 
+  const applyParsedWorkbook = useCallback(
+    (
+      parsed: ParsedWorkbook,
+      confidence: PdfParseConfidence | null | undefined,
+      opts?: { toastOk?: boolean; goToStep?: number },
+    ) => {
+      const nonEmpty = parsed.sheets.filter((s) => s.headers.length > 0);
+      if (nonEmpty.length === 0) {
+        toast.error("No readable content found in this PDF.");
+        return false;
+      }
+      setPdfConfidence(confidence ?? null);
+      setWb(parsed);
+      setName((prev) => prev || parsed.fileName.replace(/\.[^.]+$/, ""));
+      setSheets(nonEmpty.map((s, i) => ({ name: s.name, included: i === 0 || nonEmpty.length === 1 })));
+      setActiveSheet(nonEmpty[0]!.name);
+      let flaggedCount = 0;
+      setFields(
+        nonEmpty.flatMap((s) =>
+          s.headers.map((h, idx) => {
+            const samples = s.rows.slice(0, 20).map((r) => r[h.api_name]);
+            const pii = detectPii(h.api_name, h.original_name, samples);
+            if (pii.isPii) flaggedCount++;
+            return {
+              source_key: h.api_name,
+              sheet_name: s.name,
+              original_name: h.original_name,
+              api_name: h.api_name,
+              data_type: h.data_type,
+              nullable: true,
+              is_pii: pii.isPii,
+              masking: pii.masking,
+              hash_algo: "hmac_sha256" as const,
+              included: true,
+              position: idx,
+            };
+          }),
+        ),
+      );
+      if (flaggedCount > 0) {
+        toast.warning(
+          `Auto-flagged ${flaggedCount} field${flaggedCount === 1 ? "" : "s"} as sensitive (PII). Review masking on the Fields step.`,
+        );
+      }
+      const textFallback = (confidence?.sheets ?? []).some((s) =>
+        (s.flags ?? []).some(
+          (f) => f === "text_fallback" || f === "needs_human_curation" || f === "ai_provider_failed",
+        ),
+      );
+      if (opts?.toastOk !== false) {
+        if (textFallback) {
+          toast.warning(
+            "AI could not structure this PDF cleanly — we loaded the extracted text for you to review and edit before publishing.",
+          );
+        } else {
+          toast.message("Table data loaded — review fields before publishing.");
+        }
+      }
+      setStep(opts?.goToStep ?? 1);
+      setPdfJobStatus("idle");
+      setPdfJobError(null);
+      return true;
+    },
+    [],
+  );
+
+  const applyStructure = useCallback(
+    (structure: PdfStructureSnapshot, confidence?: PdfParseConfidence | null) => {
+      const normalized = normalizeStructureSnapshot(structure);
+      setPdfStructure(normalized);
+      setPdfConfidence(confidence ?? null);
+      setName((prev) => prev || "PDF dataset");
+      if (!templateName) {
+        setTemplateName(`${normalized.tables[0]?.name ?? "PDF"} layout`);
+      }
+      setStep(1);
+      setPdfJobStatus("idle");
+      setPdfJobError(null);
+      toast.message("Review the discovered table structure — samples only. Approve to load full data.");
+      setPdfJobError(null);
+    },
+    [templateName],
+  );
+
+  const waitForPdfDraft = useCallback(
+    async (
+      orgId: string,
+      draftId: string,
+      until: "pending_structure" | "pending_review" = "pending_structure",
+      onProgress?: (info: { percent: number; label: string; status: string }) => void,
+    ) => {
+      const started = Date.now();
+      const deadline = started + 15 * 60 * 1000;
+      while (Date.now() < deadline) {
+        const draft = await getPdfIngestDraftFn({ data: { orgId, draftId } });
+        const elapsed = Date.now() - started;
+        const status = draft.status;
+
+        if (until === "pending_structure" && status === "pending_structure") {
+          onProgress?.({ percent: 100, label: "Structure ready", status });
+          return draft;
+        }
+        if (until === "pending_review" && status === "pending_review") {
+          onProgress?.({ percent: 100, label: "Data loaded", status });
+          return draft;
+        }
+        if (until === "pending_structure" && status === "pending_review") {
+          onProgress?.({ percent: 100, label: "Ready", status });
+          return draft;
+        }
+        // Extract failed → structure restored for retry
+        if (
+          until === "pending_review" &&
+          status === "pending_structure" &&
+          draft.parse_error
+        ) {
+          throw new Error(draft.parse_error);
+        }
+        if (status === "failed") {
+          throw new Error(draft.parse_error || "PDF parsing failed");
+        }
+        if (status === "accepted" || status === "rejected") {
+          throw new Error(`This PDF draft is ${status}.`);
+        }
+
+        let percent = 8;
+        let label = "Queued…";
+        if (status === "processing") {
+          percent = Math.min(85, 12 + Math.floor(elapsed / 800));
+          label = "Discovering table structure…";
+        } else if (status === "extracting") {
+          percent = Math.min(92, 20 + Math.floor(elapsed / 600));
+          label = "Loading full table rows…";
+        } else if (status === "pending_structure" && until === "pending_review") {
+          percent = 15;
+          label = "Starting data extract…";
+        }
+        onProgress?.({ percent, label, status });
+
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+      throw new Error(
+        "Still working after 15 minutes. You can leave — check Datasets → PDF reviews when it finishes.",
+      );
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!currentOrg?.id || !searchDraftId || draftHydrated) return;
+    let cancelled = false;
+    setParsing(true);
+    setPdfDraftId(searchDraftId);
+    setPdfJobStatus("processing");
+
+    void (async () => {
+      try {
+        let draft = await getPdfIngestDraftFn({
+          data: { orgId: currentOrg.id, draftId: searchDraftId },
+        });
+        if (cancelled) return;
+
+        if (draft.status === "processing") {
+          toast.message("Discovering PDF table structure…");
+          draft = await waitForPdfDraft(currentOrg.id, searchDraftId, "pending_structure");
+          if (cancelled) return;
+        }
+
+        if (draft.status === "extracting") {
+          toast.message("Loading full table data from PDF…");
+          draft = await waitForPdfDraft(currentOrg.id, searchDraftId, "pending_review");
+          if (cancelled) return;
+        }
+
+        if (draft.status === "failed") {
+          setPdfJobStatus("failed");
+          setPdfJobError(draft.parse_error || "PDF parsing failed");
+          toast.error(draft.parse_error || "PDF parsing failed");
+          setDraftHydrated(true);
+          return;
+        }
+
+        if (draft.status === "pending_structure" && draft.structure_snapshot) {
+          applyStructure(
+            draft.structure_snapshot as PdfStructureSnapshot,
+            draft.confidence as PdfParseConfidence,
+          );
+          if (draft.parse_error) {
+            setPdfJobError(draft.parse_error);
+            toast.error(draft.parse_error);
+          }
+          setDraftHydrated(true);
+          return;
+        }
+
+        if (draft.status === "pending_review" && draft.parsed_workbook) {
+          if (draft.structure_snapshot) {
+            setPdfStructure(normalizeStructureSnapshot(draft.structure_snapshot as PdfStructureSnapshot));
+          }
+          applyParsedWorkbook(draft.parsed_workbook, draft.confidence as PdfParseConfidence, {
+            goToStep: 2,
+          });
+          setDraftHydrated(true);
+          return;
+        }
+
+        toast.error("This PDF draft is not ready for review.");
+        setDraftHydrated(true);
+      } catch (err) {
+        if (!cancelled) {
+          setPdfJobStatus("failed");
+          setPdfJobError(toUserFacingMessage(err, "Failed to load PDF draft"));
+          toast.error(toUserFacingMessage(err, "Failed to load PDF draft"));
+        }
+        setDraftHydrated(true);
+      } finally {
+        if (!cancelled) setParsing(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentOrg?.id, searchDraftId, draftHydrated, applyParsedWorkbook, applyStructure, waitForPdfDraft]);
+
   const onFile = useCallback(
     async (file: File) => {
       if (file.size > maxUploadBytes) {
@@ -98,6 +372,68 @@ function NewDatasetWizard() {
       }
       setParsing(true);
       try {
+        if (isPdfFileName(file.name)) {
+          if (!currentOrg?.id) throw new Error("Select an organization first");
+          const loadingId = toast.loading("Discovering structure… 5%");
+          try {
+            const fileBase64 = await fileToBase64(file);
+            const started = await startPdfIngest({
+              data: {
+                orgId: currentOrg.id,
+                fileName: file.name,
+                fileBase64,
+                source: "upload",
+                targetDatasetId: existingDatasetId,
+              },
+            });
+            setPdfDraftId(started.draftId);
+            setPdfJobStatus("processing");
+            setSourceFile(file);
+            if (!name) setName(file.name.replace(/\.[^.]+$/, ""));
+            void navigate({
+              to: "/datasets/new",
+              search: { datasetId: existingDatasetId, pdfDraftId: started.draftId },
+              replace: true,
+            });
+            const draft = await waitForPdfDraft(
+              currentOrg.id,
+              started.draftId,
+              "pending_structure",
+              ({ percent, label }) => {
+                toast.loading(`${label} ${percent}%`, { id: loadingId });
+              },
+            );
+            if (draft.status === "pending_structure" && draft.structure_snapshot) {
+              applyStructure(
+                draft.structure_snapshot as PdfStructureSnapshot,
+                draft.confidence as PdfParseConfidence,
+              );
+              toast.dismiss(loadingId);
+              toast.success("Structure mapped — review tables, then approve to load data.");
+              return;
+            }
+            if (draft.status === "pending_review" && draft.parsed_workbook) {
+              applyParsedWorkbook(draft.parsed_workbook, draft.confidence as PdfParseConfidence, {
+                goToStep: 2,
+                toastOk: false,
+              });
+              toast.dismiss(loadingId);
+              toast.success("PDF ready for review.");
+              return;
+            }
+            throw new Error("PDF draft has no structure yet");
+          } catch (err) {
+            setPdfJobStatus("failed");
+            setPdfJobError(toUserFacingMessage(err, "Failed to parse PDF"));
+            toast.dismiss(loadingId);
+            toast.error(toUserFacingMessage(err, "Failed to parse PDF"));
+            return;
+          }
+        }
+
+        setPdfDraftId(null);
+        setPdfConfidence(null);
+        setPdfJobStatus("idle");
         const parsed = await parseWorkbook(file, { maxRowsPerSheet });
         const nonEmpty = parsed.sheets.filter((s) => s.headers.length > 0);
         if (nonEmpty.length === 0) {
@@ -147,13 +483,138 @@ function NewDatasetWizard() {
         }
         setStep(1);
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Failed to parse file");
+        toast.error(toUserFacingMessage(err, "Failed to parse file"));
       } finally {
         setParsing(false);
       }
     },
-    [name, maxUploadBytes, maxRowsPerSheet],
+    [
+      name,
+      maxUploadBytes,
+      maxRowsPerSheet,
+      currentOrg?.id,
+      existingDatasetId,
+      navigate,
+      applyParsedWorkbook,
+      applyStructure,
+      waitForPdfDraft,
+    ],
   );
+
+  async function handleApproveStructure() {
+    if (!currentOrg?.id || !pdfDraftId || !pdfStructure) return;
+    const included = includedStructureTables(pdfStructure);
+    if (included.length === 0) {
+      toast.error("Include at least one table with columns.");
+      return;
+    }
+    if (saveAsTemplate && !templateName.trim()) {
+      toast.error("Give the PDF template a name, or turn off Save as template.");
+      return;
+    }
+    setApprovingStructure(true);
+    setParsing(true);
+    setPdfJobStatus("processing");
+    setPdfJobError(null);
+    setExtractProgress({ percent: 5, label: "Saving approved structure…" });
+    const toastId = toast.loading("Starting data load… 5%");
+    try {
+      await approvePdfStructureFn({
+        data: {
+          orgId: currentOrg.id,
+          draftId: pdfDraftId,
+          structure: pdfStructure,
+          saveTemplate: saveAsTemplate
+            ? {
+                name: templateName.trim(),
+                fileNamePattern: templatePattern.trim() || "*.pdf",
+                description: "Saved from PDF wizard for recurring SFTP/folder ingest",
+              }
+            : null,
+        },
+      });
+      if (saveAsTemplate) {
+        toast.message(`Template "${templateName.trim()}" saved for recurring PDFs.`);
+      }
+      setExtractProgress({ percent: 18, label: "Extract job started…" });
+      toast.loading("Extracting table data… 18%", { id: toastId });
+
+      const draft = await waitForPdfDraft(
+        currentOrg.id,
+        pdfDraftId,
+        "pending_review",
+        ({ percent, label }) => {
+          setExtractProgress({ percent, label });
+          toast.loading(`${label} ${percent}%`, { id: toastId });
+        },
+      );
+      if (!draft.parsed_workbook) throw new Error("No data loaded from PDF");
+
+      const flags = (draft.confidence as PdfParseConfidence | null)?.sheets?.flatMap((s) => s.flags ?? []) ?? [];
+      const weak =
+        flags.some((f) => f === "extract_failed_used_samples" || f === "ai_provider_failed") ||
+        draft.ai_model === "text-fallback";
+
+      applyParsedWorkbook(draft.parsed_workbook, draft.confidence as PdfParseConfidence, {
+        goToStep: 2,
+        toastOk: false,
+      });
+      setExtractProgress({ percent: 100, label: "Done" });
+      toast.dismiss(toastId);
+      if (weak) {
+        toast.warning(
+          "Data load finished with low confidence — review row counts carefully before publishing.",
+        );
+      } else {
+        const rows = draft.parsed_workbook.sheets.reduce((n, s) => n + (s.rowCount ?? 0), 0);
+        toast.success(`Data loaded — ${rows.toLocaleString()} row${rows === 1 ? "" : "s"} ready. Continue to Fields.`);
+      }
+      setPdfJobStatus("idle");
+    } catch (err) {
+      setPdfJobStatus("failed");
+      const msg = toUserFacingMessage(err, "Failed to load PDF data");
+      setPdfJobError(msg);
+      setExtractProgress(null);
+      toast.dismiss(toastId);
+      toast.error(msg);
+      // Stay on Structure so the user can retry Approve.
+      setStep(1);
+    } finally {
+      setApprovingStructure(false);
+      setParsing(false);
+      window.setTimeout(() => setExtractProgress(null), 1200);
+    }
+  }
+
+  function updateStructureTable(tableId: string, patch: Partial<PdfStructureTable>) {
+    setPdfStructure((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        tables: prev.tables.map((t) => (t.id === tableId ? { ...t, ...patch } : t)),
+      };
+    });
+  }
+
+  function updateStructureHeader(
+    tableId: string,
+    headerIdx: number,
+    patch: Partial<PdfStructureTable["headers"][number]>,
+  ) {
+    setPdfStructure((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        tables: prev.tables.map((t) => {
+          if (t.id !== tableId) return t;
+          return {
+            ...t,
+            headers: t.headers.map((h, i) => (i === headerIdx ? { ...h, ...patch } : h)),
+          };
+        }),
+      };
+    });
+  }
 
   const includedSheetNames = useMemo(
     () => sheets.filter((s) => s.included).map((s) => s.name),
@@ -188,13 +649,29 @@ function NewDatasetWizard() {
         included: includedSheetNames.includes(s.name),
         rows: s.rows,
       }));
+
+      if (pdfDraftId) {
+        const { datasetId } = await publishPdfDraft({
+          data: {
+            orgId: currentOrg.id,
+            draftId: pdfDraftId,
+            datasetId: existingDatasetId,
+            name: name.trim(),
+            description: description.trim() || undefined,
+            fields,
+            sheets: sheetRows,
+            loadMode,
+            apiAccess: existingDatasetId ? undefined : isContributor(role) ? "secure" : apiAccess,
+          },
+        });
+        toast.success("Dataset published from PDF! Your API is live.");
+        navigate({ to: "/datasets/$datasetId", params: { datasetId } });
+        return;
+      }
+
       let fileBase64: string | undefined;
       if (sourceFile) {
-        const buf = await sourceFile.arrayBuffer();
-        const bytes = new Uint8Array(buf);
-        let binary = "";
-        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
-        fileBase64 = btoa(binary);
+        fileBase64 = await fileToBase64(sourceFile);
       }
       const { datasetId } = await publishDataset({
         data: {
@@ -214,7 +691,7 @@ function NewDatasetWizard() {
       toast.success("Dataset published! Your API is live.");
       navigate({ to: "/datasets/$datasetId", params: { datasetId } });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to publish dataset");
+      toast.error(toUserFacingMessage(err, "Failed to publish dataset"));
     } finally {
       setPublishing(false);
     }
@@ -242,7 +719,11 @@ function NewDatasetWizard() {
     <div className="mx-auto max-w-5xl">
       <PageHeader
         title="New dataset"
-        description="Turn a spreadsheet into a live REST API in five steps."
+        description={
+          isPdfWizard
+            ? "Discover PDF table structure, approve it, then load data and publish an API."
+            : "Turn a spreadsheet into a live REST API in five steps."
+        }
         backTo="/datasets"
         backLabel="Datasets"
         crumbs={[{ label: "Datasets", to: "/datasets" }, { label: "New" }]}
@@ -299,12 +780,30 @@ function NewDatasetWizard() {
                 <UploadCloud className="h-8 w-8 text-primary" />
               )}
               <div>
-                <div className="font-medium">{parsing ? "Parsing…" : "Drop an Excel or CSV file"}</div>
-                <div className="text-sm text-muted-foreground">.xlsx, .xls, .csv — up to 5,000 rows per sheet</div>
+                <div className="font-medium">
+                  {parsing
+                    ? pdfJobStatus === "processing"
+                      ? "Discovering PDF structure…"
+                      : "Reading file…"
+                    : "Drop Excel, CSV, or PDF"}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {parsing
+                    ? "Safe to refresh or leave — reopen this link or Datasets → PDF reviews when ready."
+                    : ".xlsx, .xls, .csv, .pdf — PDFs map structure first (samples only), then load data after you approve"}
+                </div>
+                {pdfJobError ? (
+                  <p className="mt-2 text-sm text-destructive">{pdfJobError}</p>
+                ) : null}
+                {pdfDraftId && parsing ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Job id: <code className="font-mono">{pdfDraftId.slice(0, 8)}…</code>
+                  </p>
+                ) : null}
               </div>
               <input
                 type="file"
-                accept=".xlsx,.xls,.xlsm,.csv"
+                accept=".xlsx,.xls,.xlsm,.csv,.pdf"
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
@@ -316,11 +815,211 @@ function NewDatasetWizard() {
         </Card>
       )}
 
-      {/* Step 1: Sheets */}
-      {step === 1 && wb && (
+      {/* Step 1 (PDF): Structure curation */}
+      {isPdfWizard && step === 1 && pdfStructure && (
         <Card>
           <CardContent className="space-y-4 p-6">
-            <p className="text-sm text-muted-foreground">Choose which tabs to publish. Each becomes its own API resource.</p>
+            {extractProgress && (
+              <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="flex items-center gap-2 font-medium">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    {extractProgress.label}
+                  </span>
+                  <span className="tabular-nums text-muted-foreground">{extractProgress.percent}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out"
+                    style={{ width: `${extractProgress.percent}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            {pdfJobError && !extractProgress && (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                {pdfJobError}
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Your structure is still here — adjust columns if needed, then try Approve & load data again.
+                </p>
+              </div>
+            )}
+            <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+              <FileScan className="mt-0.5 h-4 w-4 text-primary" />
+              <div>
+                <p className="font-medium text-foreground">Structure only — not full data yet</p>
+                <p className="text-muted-foreground">
+                  AI mapped columns from the start of the PDF only (first page(s), small text sample)
+                  {pdfStructure.page_count ? ` · document reports ~${pdfStructure.page_count} page(s)` : ""}.
+                  Include the grids you want, then approve to load all rows.
+                  {pdfConfidence?.model ? ` · model ${pdfConfidence.model}` : ""}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {pdfStructure.tables.map((table) => (
+                <div key={table.id} className="rounded-lg border border-border p-4 space-y-3">
+                  <label className="flex items-center gap-3">
+                    <Checkbox
+                      checked={table.included}
+                      onCheckedChange={(v) => updateStructureTable(table.id, { included: !!v })}
+                    />
+                    <Input
+                      value={table.name}
+                      onChange={(e) => updateStructureTable(table.id, { name: e.target.value })}
+                      className="h-8 max-w-sm font-medium"
+                      disabled={!table.included}
+                    />
+                    {typeof table.confidence === "number" && (
+                      <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                        {Math.round(table.confidence * 100)}%
+                      </Badge>
+                    )}
+                    {table.page_hint != null && (
+                      <span className="text-xs text-muted-foreground">page ~{table.page_hint}</span>
+                    )}
+                  </label>
+                  {table.included && (
+                    <>
+                      <div className="space-y-2 pl-8">
+                        {table.headers.map((h, hi) => (
+                          <div key={`${table.id}-${hi}`} className="flex flex-wrap items-center gap-2">
+                            <Checkbox
+                              checked={h.included}
+                              onCheckedChange={(v) =>
+                                updateStructureHeader(table.id, hi, { included: !!v })
+                              }
+                            />
+                            <Input
+                              value={h.original_name}
+                              onChange={(e) =>
+                                updateStructureHeader(table.id, hi, { original_name: e.target.value })
+                              }
+                              className="h-8 w-40 text-xs"
+                              placeholder="Header"
+                            />
+                            <Input
+                              value={h.api_name}
+                              onChange={(e) =>
+                                updateStructureHeader(table.id, hi, { api_name: e.target.value })
+                              }
+                              className="h-8 w-40 font-mono text-xs"
+                              placeholder="api_name"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      {table.sample_rows.length > 0 && (
+                        <div className="overflow-x-auto rounded border border-border/60 bg-muted/20 p-2 text-xs">
+                          <p className="mb-1 text-muted-foreground">Sample rows (preview only)</p>
+                          <table className="w-full border-collapse">
+                            <thead>
+                              <tr>
+                                {table.headers
+                                  .filter((h) => h.included)
+                                  .map((h) => (
+                                    <th key={h.api_name} className="border-b px-2 py-1 text-left font-medium">
+                                      {h.api_name}
+                                    </th>
+                                  ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {table.sample_rows.map((row, ri) => (
+                                <tr key={ri}>
+                                  {table.headers.map((h, hi) =>
+                                    h.included ? (
+                                      <td key={`${h.api_name}-${hi}`} className="px-2 py-1 text-muted-foreground">
+                                        {String(Array.isArray(row) ? (row[hi] ?? "") : "")}
+                                      </td>
+                                    ) : null,
+                                  )}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-3 rounded-lg border border-border p-4">
+              <label className="flex items-center gap-3">
+                <Checkbox checked={saveAsTemplate} onCheckedChange={(v) => setSaveAsTemplate(!!v)} />
+                <div>
+                  <div className="font-medium text-sm">Save as PDF template</div>
+                  <div className="text-xs text-muted-foreground">
+                    Reuse this layout for recurring files from folders or SFTP — ETL will know what is where.
+                  </div>
+                </div>
+              </label>
+              {saveAsTemplate && (
+                <div className="grid gap-3 sm:grid-cols-2 pl-8">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="tmpl-name">Template name</Label>
+                    <Input
+                      id="tmpl-name"
+                      value={templateName}
+                      onChange={(e) => setTemplateName(e.target.value)}
+                      placeholder="Monthly KPI pack"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="tmpl-pat">File name pattern</Label>
+                    <Input
+                      id="tmpl-pat"
+                      value={templatePattern}
+                      onChange={(e) => setTemplatePattern(e.target.value)}
+                      placeholder="*kpi*.pdf"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sheets (Excel step 1) / Data (PDF step 2) */}
+      {((!isPdfWizard && step === 1) || (isPdfWizard && step === 2)) && wb && (
+        <Card>
+          <CardContent className="space-y-4 p-6">
+            <p className="text-sm text-muted-foreground">
+              {isPdfWizard
+                ? "Full table data is loaded. Choose which tables to publish as API resources."
+                : "Choose which tabs to publish. Each becomes its own API resource."}
+            </p>
+            {pdfDraftId && (
+              <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+                <FileScan className="mt-0.5 h-4 w-4 text-primary" />
+                <div>
+                  <p className="font-medium text-foreground">PDF data loaded from approved structure</p>
+                  <p className="text-muted-foreground">
+                    Confirm tables before continuing.
+                    {pdfConfidence
+                      ? ` Overall confidence: ${Math.round(pdfConfidence.overall * 100)}%`
+                      : ""}
+                    {pdfConfidence?.model ? ` · model ${pdfConfidence.model}` : ""}
+                  </p>
+                  {(wb.sheets.reduce((n, s) => n + s.rowCount, 0) <= PDF_STRUCTURE_SAMPLE_ROWS ||
+                    (pdfConfidence?.sheets ?? []).some((s) =>
+                      (s.flags ?? []).some((f) =>
+                        ["fragment_only", "structure_only", "extract_failed_used_samples"].includes(f),
+                      ),
+                    )) && (
+                    <p className="mt-2 text-destructive">
+                      Only a few rows are loaded — this looks like structure samples, not the full
+                      statement. Go Back to Structure and click Approve & load data again before
+                      publishing.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
             {wb.hasMacros && (
               <div className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
                 <AlertTriangle className="mt-0.5 h-4 w-4 text-warning" />
@@ -330,6 +1029,7 @@ function NewDatasetWizard() {
             <div className="space-y-2">
               {wb.sheets.filter((s) => s.headers.length > 0).map((s) => {
                 const checked = sheets.find((x) => x.name === s.name)?.included ?? false;
+                const conf = pdfConfidence?.sheets.find((c) => c.sheetName === s.name);
                 return (
                   <label key={s.name} className="flex items-center gap-3 rounded-lg border border-border p-3">
                     <Checkbox
@@ -340,9 +1040,17 @@ function NewDatasetWizard() {
                     />
                     <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
                     <div className="flex-1">
-                      <div className="font-medium">{s.name}</div>
+                      <div className="flex flex-wrap items-center gap-2 font-medium">
+                        {s.name}
+                        {conf && (
+                          <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                            {Math.round(conf.confidence * 100)}% confidence
+                          </Badge>
+                        )}
+                      </div>
                       <div className="text-xs text-muted-foreground">
-                        {s.headers.length} columns · {s.rowCount} rows{s.truncated ? " (truncated to 5,000)" : ""}
+                        {s.headers.length} columns · {s.rowCount} rows{s.truncated ? " (truncated)" : ""}
+                        {conf?.flags?.length ? ` · ${conf.flags.join(", ")}` : ""}
                       </div>
                     </div>
                   </label>
@@ -353,8 +1061,8 @@ function NewDatasetWizard() {
         </Card>
       )}
 
-      {/* Step 2: Fields */}
-      {step === 2 && wb && (
+      {/* Fields */}
+      {((!isPdfWizard && step === 2) || (isPdfWizard && step === 3)) && wb && (
         <Card>
           <CardContent className="p-6">
             <Tabs value={activeSheet} onValueChange={setActiveSheet}>
@@ -422,8 +1130,8 @@ function NewDatasetWizard() {
         </Card>
       )}
 
-      {/* Step 3: Load mode */}
-      {step === 3 && (
+      {/* Load mode */}
+      {((!isPdfWizard && step === 3) || (isPdfWizard && step === 4)) && (
         <Card>
           <CardContent className="space-y-3 p-6">
             <p className="text-sm text-muted-foreground">How should future syncs from a connector update this data?</p>
@@ -487,8 +1195,8 @@ function NewDatasetWizard() {
         </Card>
       )}
 
-      {/* Step 4: Review */}
-      {step === 4 && wb && (
+      {/* Review */}
+      {((!isPdfWizard && step === 4) || (isPdfWizard && step === 5)) && wb && (
         <Card>
           <CardContent className="space-y-4 p-6">
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -561,13 +1269,32 @@ function NewDatasetWizard() {
       {/* Nav */}
       {step > 0 && (
         <div className="mt-6 flex justify-between">
-          <Button variant="outline" onClick={() => setStep((s) => s - 1)} disabled={publishing}>
+          <Button
+            variant="outline"
+            onClick={() => setStep((s) => s - 1)}
+            disabled={publishing || approvingStructure || parsing}
+          >
             <ArrowLeft className="h-4 w-4" /> Back
           </Button>
-          {step < 4 ? (
+          {isPdfWizard && step === 1 ? (
+            <Button onClick={() => void handleApproveStructure()} disabled={approvingStructure || parsing}>
+              {approvingStructure || parsing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {extractProgress ? `${extractProgress.percent}%` : "Loading…"}
+                </>
+              ) : (
+                <>
+                  Approve & load data <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </Button>
+          ) : step < lastStep ? (
             <Button
               onClick={() => setStep((s) => s + 1)}
-              disabled={step === 1 && includedSheetNames.length === 0}
+              disabled={
+                (isPdfWizard ? step === 2 : step === 1) && includedSheetNames.length === 0
+              }
             >
               Next <ArrowRight className="h-4 w-4" />
             </Button>

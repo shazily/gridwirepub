@@ -182,6 +182,46 @@ vi.mock("@/lib/email-ingest-import.server", () => ({
   }),
 }));
 
+vi.mock("@/lib/clamav.server", () => ({
+  scanBytesWithClamav: vi.fn().mockResolvedValue({ clean: true, detail: "scan_skipped" }),
+}));
+
+vi.mock("@/lib/quota.server", () => ({
+  getOrgMaxUploadBytes: vi.fn().mockResolvedValue(50_000_000),
+  getOrgMaxRowsPerSheet: vi.fn().mockResolvedValue(5000),
+}));
+
+const notifyEmailIngestOutcome = vi.fn().mockResolvedValue(undefined);
+
+vi.mock("@/lib/notifications.server", () => ({
+  notifyEmailIngestOutcome: (...args: unknown[]) => notifyEmailIngestOutcome(...args),
+}));
+
+const findMatchingPdfTemplate = vi.fn();
+const createPdfIngestDraft = vi.fn();
+const assertPdfIngestCapacity = vi.fn().mockResolvedValue(undefined);
+const raisePdfReadyAlert = vi.fn().mockResolvedValue(undefined);
+const extractPdfDataWithStructure = vi.fn();
+
+vi.mock("@/lib/pdf-templates.server", () => ({
+  findMatchingPdfTemplate: (...args: unknown[]) => findMatchingPdfTemplate(...args),
+}));
+
+vi.mock("@/lib/pdf-ingest-draft.server", () => ({
+  assertPdfIngestCapacity: (...args: unknown[]) => assertPdfIngestCapacity(...args),
+  createPdfIngestDraft: (...args: unknown[]) => createPdfIngestDraft(...args),
+  raisePdfReadyAlert: (...args: unknown[]) => raisePdfReadyAlert(...args),
+}));
+
+vi.mock("@/lib/pdf-parse.ai.server", () => ({
+  extractPdfDataWithStructure: (...args: unknown[]) => extractPdfDataWithStructure(...args),
+}));
+
+vi.mock("@/lib/user-facing-error", () => ({
+  logServer: vi.fn(),
+  logServerError: vi.fn(),
+}));
+
 describe("processInboundPostmarkEmail pipeline", () => {
   beforeEach(() => {
     state = makeState();
@@ -226,17 +266,9 @@ describe("processInboundPostmarkEmail pipeline", () => {
   });
 
   it("rejects when no spreadsheet attachment", async () => {
-    state = makeState({
-      templates: [
-        {
-          ...makeState().templates[0]!,
-          attachment_pattern: null,
-        },
-      ],
-    });
     const result = await run({ from: "analyst@corp.com", attachments: [] });
-    expect(result.status).toBe("rejected_template");
-    expect(result.detail).toMatch(/attachment/i);
+    expect(result.status).toBe("rejected_no_attachment");
+    expect(result.detail).toMatch(/Excel\/CSV\/PDF/i);
   });
 
   it("rejects schema mismatch (extra column)", async () => {
@@ -252,5 +284,72 @@ describe("processInboundPostmarkEmail pipeline", () => {
     state = makeState({ templates: [] });
     const result = await run({ from: "analyst@corp.com" });
     expect(result.status).toBe("rejected_template");
+  });
+
+  it("rejects emailed PDF without a curated PDF structure template", async () => {
+    findMatchingPdfTemplate.mockResolvedValue(null);
+    const result = await run({
+      from: "analyst@corp.com",
+      attachments: [
+        {
+          name: "statement.pdf",
+          contentType: "application/pdf",
+          contentBase64: Buffer.from("%PDF-1.4").toString("base64"),
+        },
+      ],
+    });
+    expect(result.status).toBe("rejected_template");
+    expect(result.detail).toMatch(/curated PDF structure template/i);
+    expect(extractPdfDataWithStructure).not.toHaveBeenCalled();
+    expect(notifyEmailIngestOutcome).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "rejected_template",
+        fromAddress: "analyst@corp.com",
+        attachmentName: "statement.pdf",
+        detail: expect.stringMatching(/curated PDF structure template/i),
+      }),
+    );
+  });
+
+  it("stages emailed PDF for review when a structure template matches", async () => {
+    const PDF_TEMPLATE_ID = "66666666-6666-6666-6666-666666666666";
+    const DRAFT_ID = "77777777-7777-7777-7777-777777777777";
+    findMatchingPdfTemplate.mockResolvedValue({
+      id: PDF_TEMPLATE_ID,
+      name: "Bank statement",
+      file_name_pattern: "*statement*.pdf",
+      structure_snapshot: { tables: [{ name: "Tx", headers: ["Date", "Amount"], sample_rows: [] }] },
+      target_dataset_id: null,
+    });
+    extractPdfDataWithStructure.mockResolvedValue({
+      workbook: {
+        fileName: "statement.pdf",
+        sheets: [{ name: "Tx", headers: [{ api_name: "date" }], rows: [{ date: "2024-01-01" }] }],
+        hasMacros: false,
+      },
+      meta: { format: "pdf", parser: "text-extract", aiModel: "text-extract" },
+    });
+    createPdfIngestDraft.mockResolvedValue({ id: DRAFT_ID });
+
+    const result = await run({
+      from: "analyst@corp.com",
+      attachments: [
+        {
+          name: "jan_statement.pdf",
+          contentType: "application/pdf",
+          contentBase64: Buffer.from("%PDF-1.4 fake").toString("base64"),
+        },
+      ],
+    });
+
+    expect(result.status).toBe("pending_pdf_review");
+    expect(findMatchingPdfTemplate).toHaveBeenCalledWith(
+      expect.objectContaining({ fileName: "jan_statement.pdf", orgId: ORG_ID }),
+    );
+    expect(extractPdfDataWithStructure).toHaveBeenCalled();
+    expect(createPdfIngestDraft).toHaveBeenCalledWith(
+      expect.objectContaining({ source: "email", fileName: "jan_statement.pdf" }),
+    );
+    expect(result.detail).toMatch(/Bank statement/);
   });
 });

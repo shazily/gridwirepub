@@ -13,13 +13,13 @@ export const Route = createFileRoute("/")({
     meta: [
       {
         title: showMarketingLanding
-          ? "Gridwire — Turn any spreadsheet into a production API"
+          ? "Gridwire — Spreadsheets & PDFs to production APIs"
           : "Gridwire — Set up your instance",
       },
       {
         name: "description",
         content: showMarketingLanding
-          ? "Open-source, self-hostable portal that converts Excel and CSV files into secure, documented REST APIs with versioning, masking, API keys, and team access."
+          ? "Open-source, self-hostable portal that turns Excel, CSV, and PDFs into secure, documented REST APIs — with AI PDF table parsing, versioning, masking, API keys, and team access."
           : "Configure your self-hosted Gridwire portal — create an organization, upload data, and publish secured REST APIs.",
       },
     ],

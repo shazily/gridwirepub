@@ -20,7 +20,7 @@ Point your Cloudflare tunnel at `http://127.0.0.1:3020` (or whatever you set in 
 
 ```powershell
 git clone https://github.com/shazily/gridwirepub.git
-cd gridwirepub
+cd gridwire
 .\scripts\bootstrap.ps1 `
   -SupabaseUrl "https://your-project.supabase.co" `
   -AnonKey "your-anon-key" `

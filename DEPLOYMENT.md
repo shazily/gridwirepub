@@ -55,8 +55,8 @@ Kubernetes only when you need multi-node high availability.
 ### 3.1 Configure
 
 ```bash
-git clone https://github.com/YOUR_ORG/gridwire.git
-cd gridwirepub
+git clone https://github.com/shazily/gridwirepub.git
+cd gridwire
 cp .env.example .env
 ```
 

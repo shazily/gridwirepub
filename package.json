@@ -69,6 +69,7 @@
     "lzo": "^0.4.11",
     "nodemailer": "^9.0.3",
     "parquetjs": "^0.11.2",
+    "pdfjs-dist": "^4.10.38",
     "react": "^19.2.0",
     "react-day-picker": "^9.14.0",
     "react-dom": "^19.2.0",

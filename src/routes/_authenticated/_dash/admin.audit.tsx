@@ -25,6 +25,9 @@ import {
   Mail,
   ShieldAlert,
   Download,
+  Archive,
+  ArchiveRestore,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -49,6 +52,10 @@ const ACTION_META: Record<string, { label: string; icon: typeof ScrollText; tone
   "dataset.created": { label: "Dataset created", icon: Database, tone: "text-success" },
   "dataset.version.published": { label: "New version published", icon: Database, tone: "text-success" },
   "dataset.access.changed": { label: "API access changed", icon: Lock, tone: "text-warning" },
+  "dataset.archived": { label: "Dataset archived", icon: Archive, tone: "text-warning" },
+  "dataset.restored": { label: "Dataset restored", icon: ArchiveRestore, tone: "text-success" },
+  "dataset.deleted": { label: "Dataset permanently deleted", icon: Trash2, tone: "text-destructive" },
+  "dataset.delete_failed": { label: "Dataset delete failed", icon: ShieldAlert, tone: "text-destructive" },
   "api_key.created": { label: "API key created", icon: KeyRound, tone: "text-success" },
   "api_key.revoked": { label: "API key revoked", icon: KeyRound, tone: "text-destructive" },
   "api_key.rotated": { label: "API key rotated", icon: KeyRound, tone: "text-warning" },
@@ -156,7 +163,7 @@ function AuditLog() {
     <div>
       <PageHeader
         title="Audit log"
-        description="A tamper-evident record of who accessed data and who changed access controls. Retained per organization and visible only to owners and admins."
+        description="A tamper-evident, insert-only record of data access and control-plane changes — including dataset archive, restore, and permanent deletion. Retained per organization; visible only to owners and admins."
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -198,7 +205,16 @@ function AuditLog() {
           {filtered.map((e) => {
             const m = metaFor(e.action);
             const Icon = m.icon;
-            const access = (e.metadata as { access?: string } | null)?.access;
+            const meta = (e.metadata ?? {}) as {
+              access?: string;
+              row_count?: number;
+              correlation_id?: string;
+              reason?: string | null;
+              previous_status?: string;
+              new_status?: string;
+              deleted_name?: string;
+              api_effect?: string;
+            };
             return (
               <Card key={e.id}>
                 <CardContent className="flex flex-wrap items-center gap-3 p-4">
@@ -212,16 +228,28 @@ function AuditLog() {
                       {e.resource_id ? ` · ${e.resource_id}` : ""}
                       {e.ip ? ` · ${e.ip}` : ""}
                     </div>
+                    {(meta.reason || meta.correlation_id || meta.api_effect) && (
+                      <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                        {meta.deleted_name ? `“${meta.deleted_name}” · ` : ""}
+                        {meta.previous_status && meta.new_status
+                          ? `${meta.previous_status} → ${meta.new_status}`
+                          : meta.api_effect
+                            ? `API: ${meta.api_effect}`
+                            : ""}
+                        {meta.reason ? ` · ${meta.reason}` : ""}
+                        {meta.correlation_id ? ` · ${meta.correlation_id.slice(0, 8)}` : ""}
+                      </div>
+                    )}
                   </div>
                   <div className="ml-auto flex items-center gap-2">
-                    {access && (
+                    {meta.access && (
                       <Badge variant="secondary" className="gap-1">
-                        {access === "public" ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
-                        {access}
+                        {meta.access === "public" ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+                        {meta.access}
                       </Badge>
                     )}
-                    {typeof (e.metadata as { row_count?: number } | null)?.row_count === "number" && (
-                      <Badge variant="secondary">{(e.metadata as { row_count?: number }).row_count} rows</Badge>
+                    {typeof meta.row_count === "number" && (
+                      <Badge variant="secondary">{meta.row_count} rows</Badge>
                     )}
                     <span className="hidden text-xs text-muted-foreground sm:inline">
                       {new Date(e.created_at).toLocaleString()}

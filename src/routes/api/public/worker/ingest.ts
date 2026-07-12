@@ -51,9 +51,17 @@ export const Route = createFileRoute("/api/public/worker/ingest")({
 
           if (body.run_id) {
             const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            const statusNote = result.pendingPdfReview
+              ? `PDF staged for review (${result.pdfDraftId})`
+              : undefined;
             await supabaseAdmin
               .from("connector_runs")
-              .update({ files_ingested: 1, status: "success", finished_at: new Date().toISOString() })
+              .update({
+                files_ingested: result.pendingPdfReview ? 0 : 1,
+                status: "success",
+                finished_at: new Date().toISOString(),
+                ...(statusNote ? { error: statusNote } : {}),
+              })
               .eq("id", body.run_id);
           }
 
