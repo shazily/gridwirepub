@@ -309,10 +309,14 @@ function AdminAuthentication() {
           <CardTitle className="flex items-center gap-2 text-base">
             Org email (SMTP)
             <HelpTip title="Org SMTP vs platform email" learnMoreHref="/help#authentication-email">
-              Platform password reset uses Postmark HTTP (server .env). Org SMTP here is for OTP and alert mail from your own server — not forgot-password.
+              Platform password reset and alert emails use Postmark or SMTP from the server .env (POSTMARK_API_TOKEN or
+              SMTP_HOST) — not these fields. Org SMTP/SMS here are saved for future org-owned mail/OTP and are not
+              used by the mailer yet.
             </HelpTip>
           </CardTitle>
-          <CardDescription>Used for OTP and alert delivery from your mail server.</CardDescription>
+          <CardDescription>
+            Saved on the organization for future OTP/org mail. Does not send forgot-password or alert mail today.
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5 sm:col-span-2">
