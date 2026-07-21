@@ -1,41 +1,28 @@
 import { emailDeliveryConfigured, sendEmail } from "@/lib/email.server";
+import {
+  buildPortalRecoveryLink,
+  resolvePublicAppUrl,
+  sanitizePasswordResetRedirect,
+} from "@/lib/public-app-url.server";
 
-function publicAuthBaseUrl(): string {
-  return (
-    process.env.API_EXTERNAL_URL?.trim() ||
-    process.env.VITE_SUPABASE_URL?.trim() ||
-    "http://127.0.0.1:3040"
-  ).replace(/\/$/, "");
-}
-
-function publicSiteUrl(): string {
-  return (process.env.SITE_URL?.trim() || process.env.PUBLIC_APP_URL?.trim() || "http://127.0.0.1:3020").replace(
-    /\/$/,
-    "",
-  );
-}
-
-/** Rewrite GoTrue's internal kong action_link into a browser-reachable verify URL. */
-export function buildPublicRecoveryLink(hashedToken: string, redirectTo?: string): string {
-  const redirect = redirectTo ?? `${publicSiteUrl()}/reset-password`;
-  const params = new URLSearchParams({
-    token: hashedToken,
-    type: "recovery",
-    redirect_to: redirect,
-  });
-  return `${publicAuthBaseUrl()}/auth/v1/verify?${params.toString()}`;
-}
+export { buildPortalRecoveryLink } from "@/lib/public-app-url.server";
 
 export async function sendPasswordResetEmail(args: {
   email: string;
   redirectTo?: string;
+  /** Org auth_config.public_app_url when available */
+  publicAppUrlOverride?: string | null;
 }): Promise<{ sent: boolean; reason?: string }> {
   if (!emailDeliveryConfigured()) {
     return { sent: false, reason: "email_not_configured" };
   }
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const redirectTo = args.redirectTo ?? `${publicSiteUrl()}/reset-password`;
+  const publicOrigin = resolvePublicAppUrl({
+    explicitOverride: args.publicAppUrlOverride,
+    preferredRedirect: args.redirectTo,
+  });
+  const redirectTo = sanitizePasswordResetRedirect(args.redirectTo, publicOrigin);
 
   const { data, error } = await supabaseAdmin.auth.admin.generateLink({
     type: "recovery",
@@ -48,7 +35,7 @@ export async function sendPasswordResetEmail(args: {
     return { sent: true };
   }
 
-  const resetLink = buildPublicRecoveryLink(data.properties.hashed_token, redirectTo);
+  const resetLink = buildPortalRecoveryLink(data.properties.hashed_token, publicOrigin);
   const senderName = process.env.SMTP_SENDER_NAME?.trim() || "Gridwire";
 
   const ok = await sendEmail({

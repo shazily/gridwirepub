@@ -15,6 +15,7 @@ import crypto from "node:crypto";
 import http from "node:http";
 import cron from "node-cron";
 import SftpClient from "ssh2-sftp-client";
+import { assertSafeConnectorPath, safeJoinUnderDir } from "./connector-path-guard.js";
 import { assertConnectorHostAllowed } from "./connector-host-guard.js";
 
 const PORTAL_URL = (process.env.PORTAL_URL || "").replace(/\/$/, "");
@@ -116,12 +117,19 @@ function matchPattern(name, pattern) {
 
 // Returns [{ name, buf }] for files found at the source.
 async function readFolder(cfg) {
-  const dir = cfg.path?.replace(/\/[^/]*\*[^/]*$/, "") || cfg.path || ".";
-  const pattern = cfg.path?.split("/").pop();
+  const raw = cfg.path || ".";
+  const pattern = raw.split("/").pop();
+  const dir = assertSafeConnectorPath(
+    raw.replace(/\/[^/]*\*[^/]*$/, "") || raw,
+    process.env.CONNECTOR_ALLOWED_ROOT,
+  );
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   return entries
     .filter((e) => e.isFile() && matchPattern(e.name, pattern))
-    .map((e) => ({ name: e.name, buf: fs.readFileSync(path.join(dir, e.name)) }));
+    .map((e) => ({
+      name: e.name,
+      buf: fs.readFileSync(safeJoinUnderDir(dir, e.name)),
+    }));
 }
 
 async function readSftp(connector) {
@@ -134,8 +142,12 @@ async function readSftp(connector) {
   }
   await assertConnectorHostAllowed(cfg.host);
   const sftp = new SftpClient();
-  const dir = cfg.path?.replace(/\/[^/]*\*[^/]*$/, "") || cfg.path || ".";
-  const pattern = cfg.path?.split("/").pop();
+  const rawPath = cfg.path || ".";
+  if (String(rawPath).includes("..")) {
+    throw new Error("SFTP path must not contain parent-directory segments");
+  }
+  const dir = rawPath.replace(/\/[^/]*\*[^/]*$/, "") || rawPath || ".";
+  const pattern = rawPath.split("/").pop();
   try {
     await sftp.connect({
       host: cfg.host,
@@ -148,7 +160,9 @@ async function readSftp(connector) {
     const out = [];
     for (const item of list) {
       if (item.type !== "-" || !matchPattern(item.name, pattern)) continue;
-      const buf = await sftp.get(`${dir}/${item.name}`);
+      if (item.name.includes("..") || item.name.includes("/") || item.name.includes("\\")) continue;
+      const remotePath = `${dir.replace(/\/$/, "")}/${item.name}`;
+      const buf = await sftp.get(remotePath);
       out.push({ name: item.name, buf: Buffer.isBuffer(buf) ? buf : Buffer.from(buf) });
     }
     return out;

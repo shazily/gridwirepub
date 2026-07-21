@@ -3,6 +3,8 @@ export type PortalBranding = {
   organization_name: string;
   platform_name: string;
   logo_url: string | null;
+  auth_mode?: "local" | "sso" | "hybrid";
+  sso_configured?: boolean;
 };
 
 export function portalPath(slug: string): string {

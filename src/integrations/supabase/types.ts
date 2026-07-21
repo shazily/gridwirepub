@@ -820,23 +820,29 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          identity_source: Database["public"]["Enums"]["org_member_identity_source"]
           org_id: string
           role: Database["public"]["Enums"]["app_org_role"]
           user_id: string
+          user_type: Database["public"]["Enums"]["org_member_user_type"]
         }
         Insert: {
           created_at?: string
           id?: string
+          identity_source?: Database["public"]["Enums"]["org_member_identity_source"]
           org_id: string
           role?: Database["public"]["Enums"]["app_org_role"]
           user_id: string
+          user_type?: Database["public"]["Enums"]["org_member_user_type"]
         }
         Update: {
           created_at?: string
           id?: string
+          identity_source?: Database["public"]["Enums"]["org_member_identity_source"]
           org_id?: string
           role?: Database["public"]["Enums"]["app_org_role"]
           user_id?: string
+          user_type?: Database["public"]["Enums"]["org_member_user_type"]
         }
         Relationships: [
           {
@@ -1042,15 +1048,32 @@ export type Database = {
         Returns: {
           created_at: string
           id: string
+          identity_source: Database["public"]["Enums"]["org_member_identity_source"]
           org_id: string
           role: Database["public"]["Enums"]["app_org_role"]
           user_id: string
+          user_type: Database["public"]["Enums"]["org_member_user_type"]
         }
         SetofOptions: {
           from: "*"
           to: "org_members"
           isOneToOne: true
           isSetofReturn: false
+        }
+      }
+      update_org_member_user_type: {
+        Args: {
+          _member_id: string
+          _user_type: Database["public"]["Enums"]["org_member_user_type"]
+        }
+        Returns: {
+          created_at: string
+          id: string
+          identity_source: Database["public"]["Enums"]["org_member_identity_source"]
+          org_id: string
+          role: Database["public"]["Enums"]["app_org_role"]
+          user_id: string
+          user_type: Database["public"]["Enums"]["org_member_user_type"]
         }
       }
     }
@@ -1069,6 +1092,8 @@ export type Database = {
         | "hmac_sha512"
       field_masking: "none" | "mask" | "hash" | "encrypt"
       load_mode: "full" | "incremental"
+      org_member_identity_source: "local" | "sso"
+      org_member_user_type: "internal" | "external"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1211,6 +1236,8 @@ export const Constants = {
       ],
       field_masking: ["none", "mask", "hash", "encrypt"],
       load_mode: ["full", "incremental"],
+      org_member_identity_source: ["local", "sso"],
+      org_member_user_type: ["internal", "external"],
     },
   },
 } as const

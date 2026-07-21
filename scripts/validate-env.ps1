@@ -46,6 +46,12 @@ if ($env:GRIDWIRE_DEPLOYMENT -eq "onprem") {
     Require-Var "JWT_SECRET" $env:JWT_SECRET
     Require-Var "DATABASE_URL" $env:DATABASE_URL
     Require-Var "INBOUND_WEBHOOK_SECRET" $env:INBOUND_WEBHOOK_SECRET
+    $publicApp = if ($env:PUBLIC_APP_URL) { $env:PUBLIC_APP_URL } else { $env:SITE_URL }
+    if ([string]::IsNullOrWhiteSpace($publicApp)) {
+        Write-Host "WARN PUBLIC_APP_URL / SITE_URL unset — password-reset emails may use localhost"
+    } elseif ($publicApp -match '127\.0\.0\.1|localhost') {
+        Write-Host "WARN PUBLIC_APP_URL/SITE_URL is loopback ($publicApp) — set your public Cloudflare hostname for external password resets"
+    }
 }
 
 if ($errors.Count -gt 0) {

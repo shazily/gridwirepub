@@ -28,17 +28,44 @@ function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Supabase parses the recovery token from the URL hash and emits
-    // PASSWORD_RECOVERY / SIGNED_IN once the session is established.
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) setValidSession(true);
-      if (event === "PASSWORD_RECOVERY") setValidSession(true);
-    });
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setValidSession(true);
-      setReady(true);
-    });
-    return () => sub.subscription.unsubscribe();
+    let cancelled = false;
+
+    async function establishRecoverySession() {
+      const params = new URLSearchParams(window.location.search);
+      const tokenHash = params.get("token_hash");
+      const type = params.get("type");
+
+      if (tokenHash && (type === "recovery" || !type)) {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: "recovery",
+        });
+        if (!cancelled && !error) {
+          setValidSession(true);
+          // Drop secrets from the address bar after verify.
+          window.history.replaceState({}, "", "/reset-password");
+        }
+      }
+
+      const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+        if (session) setValidSession(true);
+        if (event === "PASSWORD_RECOVERY") setValidSession(true);
+      });
+
+      const { data } = await supabase.auth.getSession();
+      if (!cancelled) {
+        if (data.session) setValidSession(true);
+        setReady(true);
+      }
+
+      return () => sub.subscription.unsubscribe();
+    }
+
+    const cleanupPromise = establishRecoverySession();
+    return () => {
+      cancelled = true;
+      void cleanupPromise.then((cleanup) => cleanup?.());
+    };
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {

@@ -9,23 +9,38 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { getOrgGovernance, updateOrgGovernance } from "@/lib/governance.functions";
-import { ShieldAlert, KeyRound } from "lucide-react";
+import { parseGroupRoleMappings, type GroupRoleMapping, type OrgRole } from "@/lib/ad-group-role";
+import { ShieldAlert, KeyRound, Plus, Trash2, Globe } from "lucide-react";
 import { HelpTip } from "@/components/help-tip";
 
 export const Route = createFileRoute("/_authenticated/_dash/admin/authentication")({
   component: AdminAuthentication,
 });
 
+type AuthMode = "local" | "sso" | "hybrid";
+
+const MAPPING_ROLES: OrgRole[] = ["admin", "member", "contributor", "viewer"];
+
 function AdminAuthentication() {
   const { currentOrg, role } = useOrg();
   const manage = canManage(role);
   const orgId = currentOrg?.id;
 
+  const [publicAppUrl, setPublicAppUrl] = useState("");
+  const [authMode, setAuthMode] = useState<AuthMode>("hybrid");
   const [oidcIssuer, setOidcIssuer] = useState("");
   const [oidcClientId, setOidcClientId] = useState("");
   const [samlMetadataUrl, setSamlMetadataUrl] = useState("");
+  const [groupMappings, setGroupMappings] = useState<GroupRoleMapping[]>([]);
   const [smtpHost, setSmtpHost] = useState("");
   const [smtpPort, setSmtpPort] = useState("587");
   const [smtpUser, setSmtpUser] = useState("");
@@ -42,12 +57,16 @@ function AdminAuthentication() {
     if (!orgId || !manage) return;
     getOrgGovernance({ data: { orgId } }).then((data) => {
       const org = data.org as Record<string, unknown>;
-      const auth = (org.auth_config ?? {}) as Record<string, string>;
+      const auth = (org.auth_config ?? {}) as Record<string, unknown>;
       const smtp = (org.smtp_config ?? {}) as Record<string, string>;
       const sms = (org.sms_config ?? {}) as Record<string, string>;
-      setOidcIssuer(auth.oidc_issuer ?? "");
-      setOidcClientId(auth.oidc_client_id ?? "");
-      setSamlMetadataUrl(auth.saml_metadata_url ?? "");
+      setPublicAppUrl(typeof auth.public_app_url === "string" ? auth.public_app_url : "");
+      const mode = auth.auth_mode;
+      setAuthMode(mode === "local" || mode === "sso" || mode === "hybrid" ? mode : "hybrid");
+      setOidcIssuer(typeof auth.oidc_issuer === "string" ? auth.oidc_issuer : "");
+      setOidcClientId(typeof auth.oidc_client_id === "string" ? auth.oidc_client_id : "");
+      setSamlMetadataUrl(typeof auth.saml_metadata_url === "string" ? auth.saml_metadata_url : "");
+      setGroupMappings(parseGroupRoleMappings(auth.group_role_mappings));
       setSmtpHost(smtp.host ?? "");
       setSmtpPort(smtp.port ?? "587");
       setSmtpUser(smtp.user ?? "");
@@ -65,6 +84,19 @@ function AdminAuthentication() {
 
   async function saveAuth() {
     if (!orgId) return;
+    const trimmedUrl = publicAppUrl.trim().replace(/\/$/, "");
+    if (trimmedUrl) {
+      try {
+        const u = new URL(trimmedUrl);
+        if (u.protocol !== "http:" && u.protocol !== "https:") {
+          toast.error("Public app URL must be http(s)");
+          return;
+        }
+      } catch {
+        toast.error("Public app URL is not a valid URL");
+        return;
+      }
+    }
     const mfaRequiredRoles: string[] = [];
     if (mfaOwners) mfaRequiredRoles.push("owner");
     if (mfaAdmins) mfaRequiredRoles.push("admin");
@@ -73,9 +105,12 @@ function AdminAuthentication() {
         data: {
           orgId,
           authConfig: {
+            public_app_url: trimmedUrl || undefined,
+            auth_mode: authMode,
             oidc_issuer: oidcIssuer || undefined,
             oidc_client_id: oidcClientId || undefined,
             saml_metadata_url: samlMetadataUrl || undefined,
+            group_role_mappings: groupMappings.filter((m) => m.group.trim()),
           },
           smtpConfig: {
             host: smtpHost || undefined,
@@ -124,11 +159,56 @@ function AdminAuthentication() {
     <div className="max-w-3xl space-y-6">
       <PageHeader
         title="Authentication"
-        description="SSO, MFA policy, and org email/SMS for OTP delivery."
+        description="Public URL, auth mode, SSO, MFA policy, and org email/SMS for OTP delivery."
         backTo="/admin"
         backLabel="Admin"
         crumbs={[{ label: "Admin", to: "/admin" }, { label: "Authentication" }]}
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Globe className="h-4 w-4" />
+            Public app URL
+            <HelpTip title="Password reset links">
+              Used in password-reset and invite emails so links open your Cloudflare / public hostname,
+              not localhost. Leave blank to use PUBLIC_APP_URL / SITE_URL from the server .env, or the
+              origin the user was on when they requested a reset.
+            </HelpTip>
+          </CardTitle>
+          <CardDescription>
+            Hostname users reach in a browser (e.g. https://data.your-company.com). Required for correct
+            reset emails when the server .env still points at 127.0.0.1.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>Public app URL</Label>
+            <Input
+              value={publicAppUrl}
+              onChange={(e) => setPublicAppUrl(e.target.value)}
+              placeholder="https://data.your-company.com"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Auth mode</Label>
+            <Select value={authMode} onValueChange={(v) => setAuthMode(v as AuthMode)}>
+              <SelectTrigger className="w-full sm:w-72">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="local">Local accounts only (email + password)</SelectItem>
+                <SelectItem value="sso">SSO only (OIDC / SAML)</SelectItem>
+                <SelectItem value="hybrid">Hybrid (local + SSO)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Portal sign-in pages honor this when opened with your org portal slug. SSO-only hides password
+              signup and forgot-password.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -155,6 +235,72 @@ function AdminAuthentication() {
             <Label>SAML metadata URL</Label>
             <Input value={samlMetadataUrl} onChange={(e) => setSamlMetadataUrl(e.target.value)} />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">AD / IdP group → role mapping</CardTitle>
+          <CardDescription>
+            When SSO users sign in, matching groups can set their workspace role (owner is never auto-assigned).
+            Full auto-provisioning runs when the IdP connector webhook is enabled.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {groupMappings.map((row, idx) => (
+            <div key={idx} className="flex flex-wrap items-end gap-2">
+              <div className="min-w-[12rem] flex-1 space-y-1.5">
+                <Label>Group id / name</Label>
+                <Input
+                  value={row.group}
+                  onChange={(e) => {
+                    const next = [...groupMappings];
+                    next[idx] = { ...row, group: e.target.value };
+                    setGroupMappings(next);
+                  }}
+                  placeholder="Finance-Users or group object id"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Role</Label>
+                <Select
+                  value={row.role}
+                  onValueChange={(v) => {
+                    const next = [...groupMappings];
+                    next[idx] = { ...row, role: v as OrgRole };
+                    setGroupMappings(next);
+                  }}
+                >
+                  <SelectTrigger className="w-40 capitalize">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MAPPING_ROLES.map((r) => (
+                      <SelectItem key={r} value={r} className="capitalize">
+                        {r}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setGroupMappings(groupMappings.filter((_, i) => i !== idx))}
+              >
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setGroupMappings([...groupMappings, { group: "", role: "member" }])}
+          >
+            <Plus className="h-4 w-4" /> Add mapping
+          </Button>
         </CardContent>
       </Card>
 

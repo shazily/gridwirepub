@@ -71,6 +71,10 @@ function Members() {
   const [removeTarget, setRemoveTarget] = useState<{ id: string; name: string; role: OrgRole } | null>(
     null,
   );
+  const [search, setSearch] = useState("");
+  const [filterRole, setFilterRole] = useState<string>("all");
+  const [filterType, setFilterType] = useState<string>("all");
+  const [filterSource, setFilterSource] = useState<string>("all");
 
   const members = useQuery({
     queryKey: ["members", orgId],
@@ -78,10 +82,23 @@ function Members() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("org_members")
-        .select("id, role, user_id, created_at, profiles(display_name)")
+        .select("id, role, user_id, created_at, user_type, identity_source, profiles(display_name)")
         .eq("org_id", orgId!)
         .order("created_at", { ascending: true });
-      if (error) throw error;
+      if (error) {
+        // Pre-migration fallback when user_type columns are absent.
+        const fallback = await supabase
+          .from("org_members")
+          .select("id, role, user_id, created_at, profiles(display_name)")
+          .eq("org_id", orgId!)
+          .order("created_at", { ascending: true });
+        if (fallback.error) throw fallback.error;
+        return (fallback.data ?? []).map((m) => ({
+          ...m,
+          user_type: "internal" as const,
+          identity_source: "local" as const,
+        }));
+      }
       return data;
     },
   });
@@ -198,8 +215,44 @@ function Members() {
     queryClient.invalidateQueries({ queryKey: ["members", orgId] });
   }
 
+  async function changeUserType(id: string, userType: "internal" | "external") {
+    const { error } = await supabase.rpc("update_org_member_user_type", {
+      _member_id: id,
+      _user_type: userType,
+    });
+    if (error) return toast.error(error.message);
+    if (orgId) {
+      try {
+        await logAuditEvent({
+          data: {
+            orgId,
+            action: "member.user_type.changed",
+            resourceType: "org_member",
+            resourceId: id,
+            metadata: { user_type: userType },
+          },
+        });
+      } catch {
+        /* best-effort */
+      }
+    }
+    queryClient.invalidateQueries({ queryKey: ["members", orgId] });
+  }
+
   const ownerCount = (members.data ?? []).filter((m) => m.role === "owner").length;
   const roleOptions = assignableRoles(role);
+
+  const filteredMembers = (members.data ?? []).filter((m) => {
+    const profile = m.profiles as unknown as { display_name?: string } | null;
+    const display = (profile?.display_name ?? "Member").toLowerCase();
+    if (search.trim() && !display.includes(search.trim().toLowerCase())) return false;
+    if (filterRole !== "all" && m.role !== filterRole) return false;
+    const userType = (m as { user_type?: string }).user_type ?? "internal";
+    const identitySource = (m as { identity_source?: string }).identity_source ?? "local";
+    if (filterType !== "all" && userType !== filterType) return false;
+    if (filterSource !== "all" && identitySource !== filterSource) return false;
+    return true;
+  });
 
   async function removeMember(id: string, memberRole: OrgRole) {
     if (memberRole === "owner" && ownerCount <= 1) {
@@ -325,11 +378,48 @@ function Members() {
           <p className="text-sm text-muted-foreground">
             Change a member&apos;s role from the dropdown, or revoke their access entirely.
           </p>
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Input
+              className="max-w-xs"
+              placeholder="Search by name"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <Select value={filterRole} onValueChange={setFilterRole}>
+              <SelectTrigger className="w-36"><SelectValue placeholder="Role" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All roles</SelectItem>
+                {ROLES.map((r) => (
+                  <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="w-36"><SelectValue placeholder="Type" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All types</SelectItem>
+                <SelectItem value="internal">Internal</SelectItem>
+                <SelectItem value="external">External</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterSource} onValueChange={setFilterSource}>
+              <SelectTrigger className="w-36"><SelectValue placeholder="Source" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All sources</SelectItem>
+                <SelectItem value="local">Local</SelectItem>
+                <SelectItem value="sso">SSO</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent className="space-y-2">
-          {(members.data ?? []).map((m) => {
+          {filteredMembers.map((m) => {
             const profile = m.profiles as unknown as { display_name?: string } | null;
             const display = profile?.display_name ?? "Member";
+            const userType = ((m as { user_type?: string }).user_type ?? "internal") as "internal" | "external";
+            const identitySource = ((m as { identity_source?: string }).identity_source ?? "local") as
+              | "local"
+              | "sso";
             const isSoleOwner = m.role === "owner" && ownerCount <= 1;
             const canRemove =
               manage &&
@@ -342,11 +432,29 @@ function Members() {
               !(m.role === "owner" && role !== "owner") &&
               !(m.user_id === user?.id && role === "admin");
             return (
-              <div key={m.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
+              <div key={m.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback>{display.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
-                <div className="flex-1 font-medium">{display}</div>
+                <div className="min-w-[8rem] flex-1">
+                  <div className="font-medium">{display}</div>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    <Badge variant="outline" className="capitalize text-[10px]">{userType}</Badge>
+                    <Badge variant="secondary" className="uppercase text-[10px]">{identitySource}</Badge>
+                  </div>
+                </div>
+                {manage ? (
+                  <Select
+                    value={userType}
+                    onValueChange={(v) => changeUserType(m.id, v as "internal" | "external")}
+                  >
+                    <SelectTrigger className="w-32 capitalize"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="internal">Internal</SelectItem>
+                      <SelectItem value="external">External</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : null}
                 {canChangeRole ? (
                   <Select value={m.role} onValueChange={(v) => changeRole(m.id, v as OrgRole)}>
                     <SelectTrigger className="w-36 capitalize"><SelectValue /></SelectTrigger>
@@ -374,6 +482,9 @@ function Members() {
               </div>
             );
           })}
+          {filteredMembers.length === 0 && (
+            <p className="py-6 text-center text-sm text-muted-foreground">No members match these filters.</p>
+          )}
         </CardContent>
       </Card>
 

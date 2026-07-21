@@ -39,11 +39,21 @@ function AuthPage() {
   const platformName = portalActive ? branding.data!.platform_name : "Gridwire";
   const logoUrl = portalActive ? branding.data!.logo_url : null;
   const orgName = portalActive ? branding.data!.organization_name : null;
+  const authMode = portalActive ? (branding.data!.auth_mode ?? "hybrid") : "hybrid";
+  const ssoConfigured = portalActive ? Boolean(branding.data!.sso_configured) : false;
+  const localAuthAllowed = authMode === "local" || authMode === "hybrid";
+  const ssoAuthAllowed = authMode === "sso" || authMode === "hybrid";
   const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (authMode === "sso" && (mode === "signup" || mode === "forgot")) {
+      setMode("signin");
+    }
+  }, [authMode, mode]);
 
   const publicConfig = useQuery({
     queryKey: ["public-config"],
@@ -84,6 +94,7 @@ function AuthPage() {
             body: JSON.stringify({
               email,
               redirectTo: `${window.location.origin}/reset-password`,
+              ...(orgSlug ? { orgSlug } : {}),
             }),
           });
           const data = (await res.json()) as { error?: string; message?: string };
@@ -201,13 +212,23 @@ function AuthPage() {
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "signin"
-              ? "Sign in to your workspace."
+              ? authMode === "sso"
+                ? "This workspace uses single sign-on."
+                : "Sign in to your workspace."
               : mode === "signup"
                 ? "Start turning spreadsheets into APIs."
                 : "Enter your email and we'll send you a reset link."}
           </p>
 
-          {mode !== "forgot" && !isOnPremDeployment && (
+          {portalActive && authMode === "sso" && (
+            <div className="mt-6 rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+              {ssoConfigured
+                ? "Ask your administrator for the Azure AD / Okta sign-in link for this portal. Password accounts are disabled."
+                : "SSO is required for this portal, but the identity provider is not fully configured yet. Contact your administrator."}
+            </div>
+          )}
+
+          {mode !== "forgot" && !isOnPremDeployment && localAuthAllowed && (
             <>
               <Button
                 variant="outline"
@@ -224,6 +245,7 @@ function AuthPage() {
             </>
           )}
 
+          {localAuthAllowed && (
           <form onSubmit={handleEmail} className={mode === "forgot" ? "mt-6 space-y-4" : "space-y-4"}>
             {mode === "forgot" && !passwordResetAvailable && publicConfig.isSuccess && (
               <p className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-muted-foreground">
@@ -284,7 +306,9 @@ function AuthPage() {
               )}
             </Button>
           </form>
+          )}
 
+          {localAuthAllowed && (
           <p className="mt-6 text-center text-sm text-muted-foreground">
             {mode === "forgot" ? (
               <>
@@ -308,6 +332,13 @@ function AuthPage() {
               </>
             )}
           </p>
+          )}
+
+          {!localAuthAllowed && ssoAuthAllowed && (
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              Password sign-in is disabled for this workspace.
+            </p>
+          )}
 
         </div>
       </div>

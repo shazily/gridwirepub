@@ -19,6 +19,11 @@ export const Route = createFileRoute("/api/public/config")({
             email_confirm_required: emailConfirmRequired,
             smtp_configured: smtpConfigured || postmarkConfigured,
             email_provider: postmarkConfigured ? "postmark" : smtpConfigured ? "smtp" : "none",
+            public_app_url_configured: Boolean(
+              (process.env.PUBLIC_APP_URL || process.env.SITE_URL || "").trim() &&
+                !(process.env.PUBLIC_APP_URL || process.env.SITE_URL || "").includes("127.0.0.1") &&
+                !(process.env.PUBLIC_APP_URL || process.env.SITE_URL || "").includes("localhost"),
+            ),
           }),
           {
             status: 200,

@@ -3,6 +3,29 @@ import { emailDeliveryConfigured } from "@/lib/email.server";
 import { sendPasswordResetEmail } from "@/lib/password-reset.server";
 import { publicErrorBody } from "@/lib/api-error.server";
 
+async function resolveOrgPublicAppUrl(orgSlug?: string): Promise<string | null> {
+  if (!orgSlug?.trim()) return null;
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin.rpc("get_public_portal_branding", {
+      _slug: orgSlug.trim(),
+    });
+    if (!data) return null;
+    // Branding RPC does not expose public_app_url (secret-ish). Load auth_config by org_id.
+    const branding = data as { org_id?: string };
+    if (!branding.org_id) return null;
+    const { data: org } = await supabaseAdmin
+      .from("organizations")
+      .select("auth_config")
+      .eq("id", branding.org_id)
+      .maybeSingle();
+    const url = (org?.auth_config as Record<string, unknown> | null)?.public_app_url;
+    return typeof url === "string" && url.trim() ? url.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 // POST /api/public/auth/recover — password reset via Postmark HTTP (GoTrue SMTP blocked in Docker).
 export const Route = createFileRoute("/api/public/auth/recover")({
   server: {
@@ -22,9 +45,9 @@ export const Route = createFileRoute("/api/public/auth/recover")({
           );
         }
 
-        let body: { email?: string; redirectTo?: string };
+        let body: { email?: string; redirectTo?: string; orgSlug?: string };
         try {
-          body = (await request.json()) as { email?: string; redirectTo?: string };
+          body = (await request.json()) as { email?: string; redirectTo?: string; orgSlug?: string };
         } catch {
           return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
             status: 400,
@@ -44,9 +67,15 @@ export const Route = createFileRoute("/api/public/auth/recover")({
           typeof body.redirectTo === "string" && body.redirectTo.startsWith("http")
             ? body.redirectTo
             : undefined;
+        const orgSlug = typeof body.orgSlug === "string" ? body.orgSlug : undefined;
+        const publicAppUrlOverride = await resolveOrgPublicAppUrl(orgSlug);
 
         try {
-          const result = await sendPasswordResetEmail({ email, redirectTo });
+          const result = await sendPasswordResetEmail({
+            email,
+            redirectTo,
+            publicAppUrlOverride,
+          });
           if (!result.sent && result.reason === "delivery_failed") {
             return new Response(
               JSON.stringify({
