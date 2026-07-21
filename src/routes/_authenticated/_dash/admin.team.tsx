@@ -31,7 +31,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Activity, Link2, Copy, ShieldCheck, Ban, UserMinus } from "lucide-react";
+import { Activity, Link2, Copy, ShieldCheck, Ban, UserMinus, UserPlus, KeyRound, PauseCircle, PlayCircle } from "lucide-react";
+import {
+  createLocalOrgUserFn,
+  sendLocalMemberPasswordResetFn,
+  setOrgMemberDisabledFn,
+} from "@/lib/org-users.functions";
+import { getOrgGovernance } from "@/lib/governance.functions";
+import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_authenticated/_dash/admin/team")({
   component: Members,
@@ -76,17 +83,25 @@ function Members() {
   const [filterType, setFilterType] = useState<string>("all");
   const [filterSource, setFilterSource] = useState<string>("all");
 
+  const [newEmail, setNewEmail] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newRole, setNewRole] = useState<OrgRole>("member");
+  const [newUserType, setNewUserType] = useState<"internal" | "external">("external");
+  const [sendSetupEmail, setSendSetupEmail] = useState(true);
+  const [creatingUser, setCreatingUser] = useState(false);
+
   const members = useQuery({
     queryKey: ["members", orgId],
     enabled: !!orgId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("org_members")
-        .select("id, role, user_id, created_at, user_type, identity_source, profiles(display_name)")
+        .select("id, role, user_id, created_at, user_type, identity_source, disabled_at, profiles(display_name)")
         .eq("org_id", orgId!)
         .order("created_at", { ascending: true });
       if (error) {
-        // Pre-migration fallback when user_type columns are absent.
+        // Pre-migration fallback when newer columns are absent.
         const fallback = await supabase
           .from("org_members")
           .select("id, role, user_id, created_at, profiles(display_name)")
@@ -97,11 +112,27 @@ function Members() {
           ...m,
           user_type: "internal" as const,
           identity_source: "local" as const,
+          disabled_at: null as string | null,
         }));
       }
       return data;
     },
   });
+
+  const authConfigQuery = useQuery({
+    queryKey: ["org-auth-mode", orgId],
+    enabled: !!orgId && manage,
+    queryFn: async () => {
+      const data = await getOrgGovernance({ data: { orgId: orgId! } });
+      const org = data.org as Record<string, unknown>;
+      const auth = (org.auth_config ?? {}) as Record<string, unknown>;
+      const mode = auth.auth_mode;
+      return mode === "local" || mode === "sso" || mode === "hybrid" ? mode : "hybrid";
+    },
+  });
+
+  const effectiveAuthMode = authConfigQuery.data ?? "hybrid";
+  const localAccountsAllowed = effectiveAuthMode === "local" || effectiveAuthMode === "hybrid";
 
   const invites = useQuery({
     queryKey: ["invites", orgId],
@@ -132,6 +163,64 @@ function Members() {
       return data;
     },
   });
+
+  async function createLocalUser() {
+    if (!orgId) return;
+    if (!newEmail.trim()) return toast.error("Email is required");
+    setCreatingUser(true);
+    try {
+      const result = await createLocalOrgUserFn({
+        data: {
+          orgId,
+          email: newEmail.trim(),
+          displayName: newName.trim() || undefined,
+          password: newPassword.trim() || undefined,
+          role: newRole,
+          userType: newUserType,
+          sendPasswordSetupEmail: sendSetupEmail,
+        },
+      });
+      toast.success(
+        result.created
+          ? result.passwordEmailSent
+            ? "User created — password setup email sent"
+            : "User created and added to this workspace"
+          : "Existing account attached to this workspace",
+      );
+      if (result.temporaryPassword) {
+        toast.message(`Temporary password: ${result.temporaryPassword}`);
+      }
+      setNewEmail("");
+      setNewName("");
+      setNewPassword("");
+      queryClient.invalidateQueries({ queryKey: ["members", orgId] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not create user");
+    } finally {
+      setCreatingUser(false);
+    }
+  }
+
+  async function sendPasswordReset(memberId: string) {
+    if (!orgId) return;
+    try {
+      await sendLocalMemberPasswordResetFn({ data: { orgId, memberId } });
+      toast.success("Password reset email sent");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not send reset email");
+    }
+  }
+
+  async function setDisabled(memberId: string, disabled: boolean) {
+    if (!orgId) return;
+    try {
+      await setOrgMemberDisabledFn({ data: { orgId, memberId, disabled } });
+      toast.success(disabled ? "Member disabled" : "Member re-enabled");
+      queryClient.invalidateQueries({ queryKey: ["members", orgId] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not update member");
+    }
+  }
 
   async function createInvite() {
     if (!orgId) return;
@@ -279,7 +368,7 @@ function Members() {
     <AdminShell>
       <PageHeader
         title="Team & access"
-        description="Invite people with secure links, change roles, revoke workspace access, and review API activity."
+        description="Create local users, invite people with links, change roles, revoke access, and review API activity."
       />
 
       {!manage && (
@@ -287,6 +376,98 @@ function Members() {
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
             Only organization owners and admins can invite users or revoke access. Ask your workspace
             owner if you need someone added or removed.
+          </CardContent>
+        </Card>
+      )}
+
+      {manage && localAccountsAllowed && (
+        <Card className="mb-6 border-primary/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <UserPlus className="h-4 w-4 text-primary" /> Add local user
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Create an email/password account (or attach an existing one) and add them to this workspace.
+              Use <span className="font-medium text-foreground">Internal</span> for staff and{" "}
+              <span className="font-medium text-foreground">External</span> for partners / marketing guests.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="person@company.com"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Display name</Label>
+                <Input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Optional"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Role</Label>
+                <Select value={newRole} onValueChange={(v) => setNewRole(v as OrgRole)}>
+                  <SelectTrigger className="capitalize"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {roleOptions.map((r) => (
+                      <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>User type</Label>
+                <Select
+                  value={newUserType}
+                  onValueChange={(v) => setNewUserType(v as "internal" | "external")}
+                >
+                  <SelectTrigger className="capitalize"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="internal">Internal</SelectItem>
+                    <SelectItem value="external">External</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>Temporary password (optional)</Label>
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder={sendSetupEmail ? "Leave blank — email a setup link instead" : "Required if not emailing a setup link"}
+                  minLength={8}
+                />
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Switch checked={sendSetupEmail} onCheckedChange={setSendSetupEmail} id="send-setup" />
+                <Label htmlFor="send-setup" className="font-normal">
+                  Email password setup / reset link
+                </Label>
+              </div>
+              <Button onClick={createLocalUser} disabled={creatingUser || !newEmail.trim()}>
+                <UserPlus className="h-4 w-4" />
+                {creatingUser ? "Creating…" : "Create user"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {manage && !localAccountsAllowed && (
+        <Card className="mb-6 border-dashed">
+          <CardContent className="py-6 text-sm text-muted-foreground">
+            This organization is <span className="font-medium text-foreground">SSO-only</span>. Local users
+            cannot be created here — change Auth mode under Admin → Authentication to Hybrid or Local, or
+            provision members via your identity provider.
           </CardContent>
         </Card>
       )}
@@ -420,6 +601,7 @@ function Members() {
             const identitySource = ((m as { identity_source?: string }).identity_source ?? "local") as
               | "local"
               | "sso";
+            const disabledAt = (m as { disabled_at?: string | null }).disabled_at ?? null;
             const isSoleOwner = m.role === "owner" && ownerCount <= 1;
             const canRemove =
               manage &&
@@ -431,8 +613,13 @@ function Members() {
               roleOptions.length > 0 &&
               !(m.role === "owner" && role !== "owner") &&
               !(m.user_id === user?.id && role === "admin");
+            const canDisable =
+              manage && m.user_id !== user?.id && !(m.role === "owner" && role !== "owner");
             return (
-              <div key={m.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3">
+              <div
+                key={m.id}
+                className={`flex flex-wrap items-center gap-3 rounded-lg border border-border p-3 ${disabledAt ? "opacity-60" : ""}`}
+              >
                 <Avatar className="h-8 w-8">
                   <AvatarFallback>{display.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
@@ -441,6 +628,9 @@ function Members() {
                   <div className="mt-1 flex flex-wrap gap-1">
                     <Badge variant="outline" className="capitalize text-[10px]">{userType}</Badge>
                     <Badge variant="secondary" className="uppercase text-[10px]">{identitySource}</Badge>
+                    {disabledAt && (
+                      <Badge variant="destructive" className="text-[10px]">Disabled</Badge>
+                    )}
                   </div>
                 </div>
                 {manage ? (
@@ -466,6 +656,27 @@ function Members() {
                   </Select>
                 ) : (
                   <Badge variant="secondary" className="capitalize">{m.role}</Badge>
+                )}
+                {manage && identitySource === "local" && !disabledAt && (
+                  <Button variant="outline" size="sm" onClick={() => void sendPasswordReset(m.id)}>
+                    <KeyRound className="h-3.5 w-3.5" /> Reset password
+                  </Button>
+                )}
+                {manage && identitySource === "sso" && (
+                  <span className="text-xs text-muted-foreground">Use company login</span>
+                )}
+                {canDisable && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void setDisabled(m.id, !disabledAt)}
+                  >
+                    {disabledAt ? (
+                      <><PlayCircle className="h-3.5 w-3.5" /> Enable</>
+                    ) : (
+                      <><PauseCircle className="h-3.5 w-3.5" /> Disable</>
+                    )}
+                  </Button>
                 )}
                 {canRemove && (
                   <Button

@@ -825,6 +825,7 @@ export type Database = {
           role: Database["public"]["Enums"]["app_org_role"]
           user_id: string
           user_type: Database["public"]["Enums"]["org_member_user_type"]
+          disabled_at: string | null
         }
         Insert: {
           created_at?: string
@@ -834,6 +835,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_org_role"]
           user_id: string
           user_type?: Database["public"]["Enums"]["org_member_user_type"]
+          disabled_at?: string | null
         }
         Update: {
           created_at?: string
@@ -843,6 +845,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_org_role"]
           user_id?: string
           user_type?: Database["public"]["Enums"]["org_member_user_type"]
+          disabled_at?: string | null
         }
         Relationships: [
           {

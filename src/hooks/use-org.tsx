@@ -65,13 +65,13 @@ export function OrgProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase
         .from("org_members")
         .select(
-          "role, organizations(id, name, slug, portal_slug, created_by, portal_platform_name, portal_logo_url, is_portal_default)",
+          "role, disabled_at, organizations(id, name, slug, portal_slug, created_by, portal_platform_name, portal_logo_url, is_portal_default)",
         )
         .eq("user_id", authUserId!)
         .order("created_at", { ascending: true });
       if (error) throw error;
       return (data ?? [])
-        .filter((m) => m.organizations)
+        .filter((m) => m.organizations && !(m as { disabled_at?: string | null }).disabled_at)
         .map((m) => ({
           role: m.role as OrgRole,
           org: m.organizations as unknown as Organization,
