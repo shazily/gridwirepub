@@ -929,6 +929,7 @@ export type Database = {
           display_name: string | null
           id: string
           updated_at: string
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -936,6 +937,7 @@ export type Database = {
           display_name?: string | null
           id: string
           updated_at?: string
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -943,6 +945,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           updated_at?: string
+          username?: string | null
         }
         Relationships: []
       }
@@ -951,6 +954,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_username_available: { Args: { _username: string }; Returns: boolean }
+      resolve_login_email: { Args: { _identifier: string }; Returns: string }
       accept_org_invite: { Args: { _token: string }; Returns: string }
       create_org_invite: {
         Args: {

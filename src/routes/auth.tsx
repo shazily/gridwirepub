@@ -12,14 +12,32 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, ArrowRight, ShieldCheck, GitBranch, KeyRound } from "lucide-react";
 
+const USERNAME_RE = /^[a-z0-9]([a-z0-9._-]*[a-z0-9])?$/i;
+
+function normalizeUsername(raw: string): string {
+  return raw.trim().toLowerCase();
+}
+
+function isValidUsername(username: string): boolean {
+  const u = normalizeUsername(username);
+  return u.length >= 3 && u.length <= 32 && USERNAME_RE.test(u);
+}
+
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>) => ({
     org: typeof search.org === "string" && search.org.trim() ? search.org.trim() : undefined,
+    mode:
+      search.mode === "signin" || search.mode === "signup" || search.mode === "forgot"
+        ? search.mode
+        : undefined,
   }),
   head: () => ({
     meta: [
       { title: "Sign in — Gridwire" },
-      { name: "description", content: "Sign in to your Gridwire workspace to turn spreadsheets into APIs." },
+      {
+        name: "description",
+        content: "Sign up or sign in with a username, email, and password to use Gridwire.",
+      },
     ],
   }),
   component: AuthPage,
@@ -27,7 +45,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { org: orgSlug } = Route.useSearch();
+  const { org: orgSlug, mode: modeFromSearch } = Route.useSearch();
   const branding = useQuery({
     queryKey: ["portal-branding", orgSlug],
     queryFn: () => fetchPortalBranding(orgSlug!),
@@ -43,11 +61,16 @@ function AuthPage() {
   const ssoConfigured = portalActive ? Boolean(branding.data!.sso_configured) : false;
   const localAuthAllowed = authMode === "local" || authMode === "hybrid";
   const ssoAuthAllowed = authMode === "sso" || authMode === "hybrid";
-  const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "forgot">(modeFromSearch ?? "signin");
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (modeFromSearch) setMode(modeFromSearch);
+  }, [modeFromSearch]);
 
   useEffect(() => {
     if (authMode === "sso" && (mode === "signup" || mode === "forgot")) {
@@ -77,6 +100,20 @@ function AuthPage() {
     });
   }, [navigate]);
 
+  async function resolveEmailForLogin(identifier: string): Promise<string> {
+    const trimmed = identifier.trim();
+    if (trimmed.includes("@")) return trimmed.toLowerCase();
+    const res = await fetch("/api/public/auth/resolve-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifier: trimmed }),
+    });
+    const data = (await res.json()) as { email?: string | null; error?: string };
+    if (!res.ok) throw new Error(data.error ?? "Could not resolve login");
+    if (!data.email) throw new Error("Invalid username or password");
+    return data.email;
+  }
+
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -87,12 +124,15 @@ function AuthPage() {
             "Password reset email is not configured on this server. Ask your administrator to configure Postmark or SMTP in the deployment .env file.",
           );
         }
+        const resetEmail = email.includes("@")
+          ? email.trim().toLowerCase()
+          : await resolveEmailForLogin(email);
         if (isOnPremDeployment) {
           const res = await fetch("/api/public/auth/recover", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              email,
+              email: resetEmail,
               redirectTo: `${window.location.origin}/reset-password`,
               ...(orgSlug ? { orgSlug } : {}),
             }),
@@ -100,7 +140,7 @@ function AuthPage() {
           const data = (await res.json()) as { error?: string; message?: string };
           if (!res.ok) throw new Error(data.error ?? "Could not send reset email");
         } else {
-          const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
             redirectTo: `${window.location.origin}/reset-password`,
           });
           if (error) throw error;
@@ -110,15 +150,39 @@ function AuthPage() {
         return;
       }
       if (mode === "signup") {
+        const uname = normalizeUsername(username);
+        if (!isValidUsername(uname)) {
+          throw new Error(
+            "Username must be 3–32 characters: letters, numbers, dots, underscores, or hyphens.",
+          );
+        }
+        const availRes = await fetch(
+          `/api/public/auth/username-available?username=${encodeURIComponent(uname)}`,
+        );
+        const avail = (await availRes.json()) as { available?: boolean };
+        if (!avail.available) {
+          throw new Error("That username is already taken. Please choose another.");
+        }
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: email.trim().toLowerCase(),
           password,
           options: {
             emailRedirectTo: window.location.origin,
-            data: { display_name: name || email.split("@")[0] },
+            data: {
+              username: uname,
+              display_name: uname,
+            },
           },
         });
         if (error) throw error;
+        // Ensure username is persisted even if trigger lags / conflicted.
+        if (data.user?.id) {
+          await supabase.from("profiles").upsert({
+            id: data.user.id,
+            username: uname,
+            display_name: uname,
+          });
+        }
         if (!data.session) {
           toast.success("Check your email to confirm your account, then sign in.");
           setMode("signin");
@@ -126,8 +190,12 @@ function AuthPage() {
         }
         toast.success("Account created. Welcome to Gridwire!");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        const resolvedEmail = await resolveEmailForLogin(loginId);
+        const { error } = await supabase.auth.signInWithPassword({
+          email: resolvedEmail,
+          password,
+        });
+        if (error) throw new Error("Invalid username or password");
       }
       navigate({ to: "/dashboard", replace: true });
     } catch (err) {
@@ -136,7 +204,6 @@ function AuthPage() {
       setLoading(false);
     }
   }
-
 
   async function handleGoogle() {
     if (isOnPremDeployment) return;
@@ -171,7 +238,6 @@ function AuthPage() {
       />
 
       <div className="grid flex-1 lg:grid-cols-2">
-      {/* Brand panel */}
       <div className="relative hidden flex-col justify-between overflow-hidden bg-sidebar p-12 lg:flex">
         <div className="grid-bg absolute inset-0 opacity-40" />
         <div className="relative max-w-md space-y-6 pt-4">
@@ -183,7 +249,7 @@ function AuthPage() {
           <p className="text-muted-foreground">
             {portalActive
               ? `Access ${platformName} to publish and consume spreadsheet data as secure APIs.`
-              : "Upload Excel or CSV, map your fields, and ship a secure, documented REST API in minutes. Open source and self-hostable."}
+              : "Create an account with a username, email, and password — then upload Excel or CSV and ship a documented REST API."}
           </p>
           <ul className="space-y-3 text-sm">
             <li className="flex items-center gap-3">
@@ -199,7 +265,6 @@ function AuthPage() {
         </div>
       </div>
 
-      {/* Form panel */}
       <div className="flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
           {portalActive && (
@@ -214,10 +279,10 @@ function AuthPage() {
             {mode === "signin"
               ? authMode === "sso"
                 ? "This workspace uses single sign-on."
-                : "Sign in to your workspace."
+                : "Sign in with your username or email and password."
               : mode === "signup"
-                ? "Start turning spreadsheets into APIs."
-                : "Enter your email and we'll send you a reset link."}
+                ? "Choose a username, email, and password to get started."
+                : "Enter your email (or username) and we'll send a reset link."}
           </p>
 
           {portalActive && authMode === "sso" && (
@@ -246,7 +311,10 @@ function AuthPage() {
           )}
 
           {localAuthAllowed && (
-          <form onSubmit={handleEmail} className={mode === "forgot" ? "mt-6 space-y-4" : "space-y-4"}>
+          <form
+            onSubmit={handleEmail}
+            className={mode === "forgot" ? "mt-6 space-y-4" : mode === "signin" && !isOnPremDeployment ? "space-y-4" : "mt-6 space-y-4"}
+          >
             {mode === "forgot" && !passwordResetAvailable && publicConfig.isSuccess && (
               <p className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-muted-foreground">
                 This deployment has no outbound email configured (set Postmark or{" "}
@@ -257,21 +325,59 @@ function AuthPage() {
             )}
             {mode === "signup" && (
               <div className="space-y-1.5">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ada Lovelace" />
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  autoComplete="username"
+                  required
+                  minLength={3}
+                  maxLength={32}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="ada_lovelace"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  3–32 characters. Letters, numbers, dots, underscores, hyphens.
+                </p>
               </div>
             )}
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@company.com"
-              />
-            </div>
+            {mode === "signin" ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="loginId">Username or email</Label>
+                <Input
+                  id="loginId"
+                  autoComplete="username"
+                  required
+                  value={loginId}
+                  onChange={(e) => setLoginId(e.target.value)}
+                  placeholder="ada_lovelace or you@company.com"
+                />
+              </div>
+            ) : mode === "forgot" ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="email">Email or username</Label>
+                <Input
+                  id="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@company.com or ada_lovelace"
+                />
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@company.com"
+                />
+              </div>
+            )}
             {mode !== "forgot" && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
@@ -289,6 +395,7 @@ function AuthPage() {
                 <Input
                   id="password"
                   type="password"
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
                   required
                   minLength={6}
                   value={password}
