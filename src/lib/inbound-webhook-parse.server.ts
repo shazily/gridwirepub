@@ -10,6 +10,9 @@ export type InboundWebhookPayload = {
   subject: string;
   externalId?: string;
   mailboxHash?: string;
+  /** Full recipient address when the gateway provides it (preferred for routing). */
+  originalRecipient?: string;
+  toAddress?: string;
   attachments: { name: string; contentType: string; contentBase64: string }[];
 };
 
@@ -20,6 +23,9 @@ export function parseInboundWebhookBody(body: {
   Subject?: string;
   MessageID?: string;
   MailboxHash?: string;
+  OriginalRecipient?: string;
+  To?: string;
+  ToFull?: { Email?: string };
   Attachments?: { Name?: string; Content?: string; ContentType?: string }[];
 }): InboundWebhookPayload {
   const from =
@@ -27,11 +33,20 @@ export function parseInboundWebhookBody(body: {
     body.From?.trim().toLowerCase().replace(/^.*<([^>]+)>.*$/, "$1") ??
     "";
 
+  const toAddress =
+    body.ToFull?.Email?.trim().toLowerCase() ??
+    body.To?.trim().toLowerCase().replace(/^.*<([^>]+)>.*$/, "$1") ??
+    undefined;
+
+  const originalRecipient = body.OriginalRecipient?.trim().toLowerCase() || undefined;
+
   return {
     from,
     subject: body.Subject ?? "",
     externalId: body.MessageID ?? undefined,
-    mailboxHash: body.MailboxHash,
+    mailboxHash: body.MailboxHash?.trim().toLowerCase() || undefined,
+    originalRecipient,
+    toAddress: toAddress || undefined,
     attachments: (body.Attachments ?? []).map((a) => ({
       name: a.Name ?? "attachment",
       contentType: a.ContentType ?? "application/octet-stream",
@@ -68,6 +83,8 @@ export async function handleInboundWebhookRequest(
       subject: parsed.subject,
       externalId: parsed.externalId,
       mailboxHash: parsed.mailboxHash,
+      originalRecipient: parsed.originalRecipient,
+      toAddress: parsed.toAddress,
       attachments: parsed.attachments,
     });
     return Response.json({ ok: true, status: result.status, detail: result.detail }, { status: 200 });

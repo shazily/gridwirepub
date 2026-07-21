@@ -2,10 +2,12 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { isOnPremDeployment } from "@/lib/deployment";
+import { isOnPremDeployment, showMarketingLanding } from "@/lib/deployment";
 import { fetchPortalBranding } from "@/lib/portal-branding";
 import { PortalBrand } from "@/components/brand";
 import { PublicSiteFooter, PublicSiteHeader } from "@/components/public-chrome";
+import { OnPremAuthPage } from "@/components/onprem-auth-page";
+import { setPendingJoinRef } from "@/lib/org-join";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +28,7 @@ function isValidUsername(username: string): boolean {
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>) => ({
     org: typeof search.org === "string" && search.org.trim() ? search.org.trim() : undefined,
+    join: typeof search.join === "string" && search.join.trim() ? search.join.trim() : undefined,
     mode:
       search.mode === "signin" || search.mode === "signup" || search.mode === "forgot"
         ? search.mode
@@ -36,7 +39,9 @@ export const Route = createFileRoute("/auth")({
       { title: "Sign in — Gridwire" },
       {
         name: "description",
-        content: "Sign up or sign in with a username, email, and password to use Gridwire.",
+        content: showMarketingLanding
+          ? "Sign up or sign in with a username, email, and password to use Gridwire."
+          : "Sign in to this Gridwire instance, then join a workspace with an organization UUID or join link.",
       },
     ],
   }),
@@ -44,8 +49,27 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
+  const { org: orgSlug, mode: modeFromSearch, join: joinRef } = Route.useSearch();
+
+  useEffect(() => {
+    if (joinRef) setPendingJoinRef(joinRef);
+  }, [joinRef]);
+
+  if (!showMarketingLanding) {
+    return <OnPremAuthPage modeFromSearch={modeFromSearch} joinRef={joinRef} />;
+  }
+
+  return <MarketingAuthPage orgSlug={orgSlug} modeFromSearch={modeFromSearch} />;
+}
+
+function MarketingAuthPage({
+  orgSlug,
+  modeFromSearch,
+}: {
+  orgSlug?: string;
+  modeFromSearch?: "signin" | "signup" | "forgot";
+}) {
   const navigate = useNavigate();
-  const { org: orgSlug, mode: modeFromSearch } = Route.useSearch();
   const branding = useQuery({
     queryKey: ["portal-branding", orgSlug],
     queryFn: () => fetchPortalBranding(orgSlug!),

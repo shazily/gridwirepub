@@ -4,6 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/hooks/use-org";
 import { AppShell } from "@/components/app-shell";
 import { PENDING_INVITE_KEY } from "@/routes/invite.$token";
+import {
+  clearPendingJoinRef,
+  getPendingJoinRef,
+  PENDING_JOIN_KEY,
+} from "@/lib/org-join";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -15,15 +20,19 @@ function DashLayout() {
   const { orgs, isLoading, isError, isReady, refetch, setCurrentOrgId } = useOrg();
   const navigate = useNavigate();
   const inviteHandled = useRef(false);
-  const inviteInFlight = useRef(false);
+  const joinHandled = useRef(false);
+  const redeemInFlight = useRef(false);
 
   // Redeem a pending invite (e.g. after email confirmation) before deciding
   // whether the user needs onboarding.
   useEffect(() => {
     if (inviteHandled.current || typeof window === "undefined") return;
     const token = window.localStorage.getItem(PENDING_INVITE_KEY);
-    if (!token) return;
-    inviteInFlight.current = true;
+    if (!token) {
+      inviteHandled.current = true;
+      return;
+    }
+    redeemInFlight.current = true;
     inviteHandled.current = true;
     (async () => {
       try {
@@ -34,13 +43,44 @@ function DashLayout() {
         await refetch();
         toast.success("You've joined the workspace!");
       } finally {
-        inviteInFlight.current = false;
+        redeemInFlight.current = false;
+      }
+    })();
+  }, [refetch, setCurrentOrgId]);
+
+  // Redeem pending join-by-org ref (UUID or portal slug from /join/… or ?join=).
+  useEffect(() => {
+    if (joinHandled.current || typeof window === "undefined") return;
+    const ref = getPendingJoinRef();
+    if (!ref) {
+      joinHandled.current = true;
+      return;
+    }
+    // Prefer invite if both somehow set — invite effect may still be running.
+    if (window.localStorage.getItem(PENDING_INVITE_KEY)) return;
+
+    redeemInFlight.current = true;
+    joinHandled.current = true;
+    (async () => {
+      try {
+        const { data, error } = await supabase.rpc("join_organization_by_ref", { _ref: ref });
+        clearPendingJoinRef();
+        if (error) return;
+        if (typeof data === "string") setCurrentOrgId(data);
+        await refetch();
+        toast.success("You've joined the workspace as a Viewer.");
+      } finally {
+        redeemInFlight.current = false;
       }
     })();
   }, [refetch, setCurrentOrgId]);
 
   useEffect(() => {
-    if (inviteInFlight.current) return;
+    if (redeemInFlight.current) return;
+    if (typeof window !== "undefined") {
+      if (window.localStorage.getItem(PENDING_INVITE_KEY)) return;
+      if (window.localStorage.getItem(PENDING_JOIN_KEY)) return;
+    }
     if (!isReady) return;
     if (isError) return;
     if (orgs.length === 0) {

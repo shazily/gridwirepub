@@ -13,7 +13,7 @@ Run the **entire platform** on your own hardware: portal, worker, Postgres, auth
 
 ```powershell
 git clone https://github.com/shazily/gridwirepub.git
-cd gridwire
+cd gridwirepub
 .\scripts\deploy.ps1 up
 ```
 

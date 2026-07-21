@@ -19,8 +19,9 @@ import {
 import { toast } from "sonner";
 import { getOrgGovernance, updateOrgGovernance } from "@/lib/governance.functions";
 import { parseGroupRoleMappings, type GroupRoleMapping, type OrgRole } from "@/lib/ad-group-role";
-import { ShieldAlert, KeyRound, Plus, Trash2, Globe } from "lucide-react";
+import { ShieldAlert, KeyRound, Plus, Trash2, Globe, Copy, UserPlus } from "lucide-react";
 import { HelpTip } from "@/components/help-tip";
+import { buildJoinUrl } from "@/lib/org-join";
 
 export const Route = createFileRoute("/_authenticated/_dash/admin/authentication")({
   component: AdminAuthentication,
@@ -49,6 +50,7 @@ function AdminAuthentication() {
   const [smsWebhook, setSmsWebhook] = useState("");
   const [mfaOwners, setMfaOwners] = useState(true);
   const [mfaAdmins, setMfaAdmins] = useState(true);
+  const [allowJoinByOrgId, setAllowJoinByOrgId] = useState(false);
 
   const [mfaEnrolled, setMfaEnrolled] = useState(false);
   const [mfaQr, setMfaQr] = useState<string | null>(null);
@@ -67,6 +69,7 @@ function AdminAuthentication() {
       setOidcClientId(typeof auth.oidc_client_id === "string" ? auth.oidc_client_id : "");
       setSamlMetadataUrl(typeof auth.saml_metadata_url === "string" ? auth.saml_metadata_url : "");
       setGroupMappings(parseGroupRoleMappings(auth.group_role_mappings));
+      setAllowJoinByOrgId(auth.allow_join_by_org_id === true);
       setSmtpHost(smtp.host ?? "");
       setSmtpPort(smtp.port ?? "587");
       setSmtpUser(smtp.user ?? "");
@@ -107,6 +110,7 @@ function AdminAuthentication() {
           authConfig: {
             public_app_url: trimmedUrl || undefined,
             auth_mode: authMode,
+            allow_join_by_org_id: allowJoinByOrgId,
             oidc_issuer: oidcIssuer || undefined,
             oidc_client_id: oidcClientId || undefined,
             saml_metadata_url: samlMetadataUrl || undefined,
@@ -207,6 +211,76 @@ function AdminAuthentication() {
               signup and forgot-password.
             </p>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <UserPlus className="h-4 w-4" />
+            Join by organization ID
+            <HelpTip title="Self-join without invites" learnMoreHref="/help#join-by-org-id">
+              When enabled, people who already have an account (or just signed up) can join this workspace as
+              Viewer by entering the organization UUID, or by opening the shareable join link (portal slug or
+              UUID). Use invite links when you need Contributor or higher. Join is off by default so orgs are
+              not discoverable by guessing.
+            </HelpTip>
+          </CardTitle>
+          <CardDescription>
+            For on-prem deployments without Active Directory: allow Viewer self-join with the org UUID or join
+            link. Disabled by default.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-border px-3 py-2">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">Allow join by organization ID</p>
+              <p className="text-xs text-muted-foreground">
+                New joiners get the Viewer role. Promote them on Team &amp; access when needed.
+              </p>
+            </div>
+            <Switch checked={allowJoinByOrgId} onCheckedChange={setAllowJoinByOrgId} />
+          </div>
+          {allowJoinByOrgId && orgId && (
+            <div className="space-y-2">
+              <Label>Shareable join link</Label>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Input
+                  readOnly
+                  value={buildJoinUrl(
+                    (publicAppUrl.trim() || (typeof window !== "undefined" ? window.location.origin : "")).replace(
+                      /\/$/,
+                      "",
+                    ) || "https://your-host",
+                    currentOrg?.portal_slug,
+                    orgId,
+                  )}
+                  className="font-mono text-xs"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => {
+                    const url = buildJoinUrl(
+                      (publicAppUrl.trim() || window.location.origin).replace(/\/$/, ""),
+                      currentOrg?.portal_slug,
+                      orgId,
+                    );
+                    void navigator.clipboard.writeText(url);
+                    toast.success("Join link copied");
+                  }}
+                >
+                  <Copy className="mr-1 h-4 w-4" /> Copy
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Organization UUID (for the join form):{" "}
+                <span className="font-mono text-foreground">{orgId}</span>
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

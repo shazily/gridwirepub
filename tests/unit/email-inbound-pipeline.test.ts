@@ -4,6 +4,7 @@ type Row = Record<string, unknown>;
 
 type MockState = {
   mailboxes: Row[];
+  aliases: Row[];
   senders: Row[];
   templates: Row[];
   messages: Row[];
@@ -32,6 +33,7 @@ function makeState(overrides: Partial<MockState> = {}): MockState {
         enabled: true,
       },
     ],
+    aliases: [],
     senders: [{ org_id: ORG_ID, email_pattern: "analyst@corp.com" }],
     templates: [
       {
@@ -119,6 +121,8 @@ function createMockSupabase(getState: () => MockState) {
       switch (this.table) {
         case "email_ingest_mailboxes":
           return state.mailboxes;
+        case "email_ingest_mailbox_aliases":
+          return state.aliases;
         case "email_ingest_sender_allowlist":
           return state.senders;
         case "email_ingest_templates":
@@ -157,6 +161,25 @@ function createMockSupabase(getState: () => MockState) {
   return {
     from(table: string) {
       return new Builder(table);
+    },
+    async rpc(fn: string, args?: Record<string, unknown>) {
+      if (fn !== "resolve_email_ingest_org") {
+        return { data: null, error: { message: `unknown rpc ${fn}` } };
+      }
+      const addr = String(args?._address ?? "")
+        .trim()
+        .toLowerCase();
+      const s = getState();
+      const primary = s.mailboxes.find(
+        (m) => m.enabled === true && String(m.inbound_address).toLowerCase() === addr,
+      );
+      if (primary) return { data: primary.org_id, error: null };
+      const alias = s.aliases.find((a) => String(a.inbound_address).toLowerCase() === addr);
+      if (alias) {
+        const mb = s.mailboxes.find((m) => m.org_id === alias.org_id && m.enabled === true);
+        if (mb) return { data: alias.org_id, error: null };
+      }
+      return { data: null, error: null };
     },
   };
 }

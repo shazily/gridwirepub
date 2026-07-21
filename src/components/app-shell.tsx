@@ -3,21 +3,18 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   Database,
-  KeyRound,
-  Cable,
-  Users,
   Settings,
   LogOut,
   ChevronsUpDown,
   Check,
   Plus,
-  BookOpen,
   LifeBuoy,
   MessageSquarePlus,
   Menu,
   Sun,
   Moon,
   Shield,
+  ScrollText,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -52,6 +49,7 @@ type NavItem = {
 const nav: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/datasets", label: "Datasets", icon: Database },
+  { to: "/logs", label: "Logs", icon: ScrollText },
   { to: "/admin", label: "Admin", icon: Shield, adminOnly: true },
 ];
 

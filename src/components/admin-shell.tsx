@@ -36,7 +36,7 @@ const adminNav = [
   { to: "/admin/api-keys", label: "API keys", icon: KeyRound },
   { to: "/admin/api-docs", label: "API docs", icon: BookOpen },
   { to: "/admin/connectors", label: "Connectors", icon: Cable },
-  { to: "/admin/audit", label: "Audit log", icon: ScrollText },
+  { to: "/logs", label: "Logs", icon: ScrollText },
   { to: "/admin/usage", label: "Usage", icon: BarChart3 },
 ] as const;
 

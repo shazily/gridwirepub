@@ -38,11 +38,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Nitro node-server output
-COPY --from=build /app/.output ./.output
-COPY --from=build /app/package.json ./package.json
-COPY --from=build /app/node_modules ./node_modules
-RUN chown -R gridwire:gridwire /app
+# Nitro node-server output — ownership set on COPY to avoid slow recursive chown of node_modules
+COPY --from=build --chown=gridwire:gridwire /app/.output ./.output
+COPY --from=build --chown=gridwire:gridwire /app/package.json ./package.json
+COPY --from=build --chown=gridwire:gridwire /app/node_modules ./node_modules
 
 USER gridwire
 

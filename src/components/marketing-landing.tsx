@@ -433,8 +433,13 @@ export function MarketingLandingPage() {
 
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Button size="lg" className="w-full shadow-lg shadow-primary/20 sm:w-auto" asChild>
-                <Link to="/auth">
-                  Create your demo workspace <ArrowRight className="h-4 w-4" />
+                <Link to="/auth" search={{ mode: "signup" }}>
+                  Sign up with username &amp; password <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" className="w-full bg-background/60 sm:w-auto" asChild>
+                <Link to="/auth" search={{ mode: "signin" }}>
+                  Sign in
                 </Link>
               </Button>
               <Button size="lg" variant="outline" className="w-full bg-background/60 sm:w-auto" asChild>

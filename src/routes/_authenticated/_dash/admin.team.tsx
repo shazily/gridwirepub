@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -480,7 +480,11 @@ function Members() {
             </CardTitle>
             <p className="text-sm text-muted-foreground">
               Share the link with a teammate. They sign up (or sign in) and instantly join this workspace — no
-              pre-existing account required.
+              pre-existing account required. For Viewer self-join without an invite (org UUID / join link), enable{" "}
+              <Link to="/admin/authentication" className="text-primary hover:underline">
+                Authentication → Allow join by organization ID
+              </Link>
+              .
             </p>
           </CardHeader>
           <CardContent className="space-y-4">

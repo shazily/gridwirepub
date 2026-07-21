@@ -5,6 +5,7 @@ import { useOrg, canManage } from "@/hooks/use-org";
 import { PageHeader } from "@/components/app-shell";
 import { AdminShell } from "@/components/admin-shell";
 import { Card, CardContent } from "@/components/ui/card";
+import { EmailIngestOpsPanel } from "@/components/email-ingest-ops-panel";
 import {
   Users,
   ScrollText,
@@ -45,7 +46,10 @@ function AdminHome() {
     enabled: !!orgId && manage,
     queryFn: async () => {
       const since = new Date(Date.now() - 30 * 864e5).toISOString();
-      const [members, invites, feedback, calls] = await Promise.all([
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayIso = today.toISOString();
+      const [members, invites, feedback, calls, ingestToday, ingestFailToday] = await Promise.all([
         supabase.from("org_members").select("user_id", { count: "exact", head: true }).eq("org_id", orgId!),
         supabase
           .from("org_invites")
@@ -58,12 +62,25 @@ function AdminHome() {
           .select("id", { count: "exact", head: true })
           .eq("org_id", orgId!)
           .gte("created_at", since),
+        supabase
+          .from("email_ingest_messages")
+          .select("id", { count: "exact", head: true })
+          .eq("org_id", orgId!)
+          .gte("created_at", todayIso),
+        supabase
+          .from("email_ingest_messages")
+          .select("id", { count: "exact", head: true })
+          .eq("org_id", orgId!)
+          .gte("created_at", todayIso)
+          .or("status.like.rejected%,status.eq.quarantined,status.eq.ingest_failed"),
       ]);
       return {
         members: members.count ?? 0,
         invites: invites.count ?? 0,
         feedback: feedback.count ?? 0,
         calls: calls.count ?? 0,
+        ingestToday: ingestToday.count ?? 0,
+        ingestFailToday: ingestFailToday.count ?? 0,
       };
     },
   });
@@ -93,12 +110,21 @@ function AdminHome() {
     { to: "/admin/storage", label: "Storage & quotas", description: "Object storage, upload limits, and team space allocation.", icon: HardDrive },
     { to: "/admin/authentication", label: "Authentication", description: "SSO, MFA policy, org SMTP and SMS for OTP.", icon: KeyRound },
     { to: "/admin/ai", label: "AI / PDF", description: "LLM provider keys and PDF table parser settings.", icon: BrainCircuit },
-    { to: "/admin/email-ingest", label: "Email ingest", description: "Allowlisted senders email Excel files for ingestion.", icon: MessageSquarePlus },
+    {
+      to: "/admin/email-ingest",
+      label: "Email ingest",
+      description: "Allowlisted senders email Excel files for ingestion.",
+      icon: MessageSquarePlus,
+      stat: stats.data?.ingestToday,
+      statLabel: stats.data?.ingestFailToday
+        ? `${stats.data.ingestFailToday} failed today`
+        : "received today",
+    },
     { to: "/admin/organization", label: "Organization", description: "Portal branding, workspace name, and invite links.", icon: Building2, stat: stats.data?.invites, statLabel: "active invites" },
     { to: "/admin/usage", label: "Usage & analytics", description: "API consumption and connector activity for your org.", icon: BarChart3, stat: stats.data?.calls },
     { to: "/app-feedback", label: "Feedback", description: "Submit feedback or review messages from your team.", icon: MessageSquarePlus, stat: stats.data?.feedback },
     { to: "/admin/alerts", label: "Alerts", description: "Configure admin email alerts for operational events.", icon: Bell },
-    { to: "/admin/audit", label: "Audit log", description: "A record of security-relevant actions in your org.", icon: ScrollText },
+    { to: "/logs", label: "Logs", description: "Email ingest history, system ops alerts, and the audit trail.", icon: ScrollText, stat: stats.data?.ingestToday, statLabel: "emails today" },
     { to: "/admin/api-keys", label: "API keys", description: "Create, rotate, and revoke dataset API tokens.", icon: KeyRound },
     { to: "/admin/connectors", label: "Connectors", description: "Manage automated ingestion sources.", icon: Cable },
     { to: "/admin/api-docs", label: "API docs", description: "OpenAPI reference and integration examples.", icon: BookOpen },
@@ -111,7 +137,8 @@ function AdminHome() {
         title="Admin console"
         description="Everything you need to run this workspace, in one place."
       />
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <EmailIngestOpsPanel />
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {links.map((l) => {
           const Icon = l.icon;
           return (

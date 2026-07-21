@@ -9,85 +9,83 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as FeedbackRouteImport } from './routes/feedback'
-import { Route as FeaturesRouteImport } from './routes/features'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as PortalOrgSlugRouteImport } from './routes/portal.$orgSlug'
-import { Route as InviteTokenRouteImport } from './routes/invite.$token'
-import { Route as DocsDatasetIdRouteImport } from './routes/docs.$datasetId'
-import { Route as AuthenticatedWelcomeRouteImport } from './routes/_authenticated/welcome'
-import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as FeaturesRouteImport } from './routes/features'
+import { Route as FeedbackRouteImport } from './routes/feedback'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedDashRouteImport } from './routes/_authenticated/_dash'
-import { Route as ApiPublicReadyRouteImport } from './routes/api/public/ready'
-import { Route as ApiPublicMetricsRouteImport } from './routes/api/public/metrics'
-import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
-import { Route as ApiPublicConfigRouteImport } from './routes/api/public/config'
-import { Route as AuthenticatedDashWorkspacesRouteImport } from './routes/_authenticated/_dash/workspaces'
-import { Route as AuthenticatedDashStorageRouteImport } from './routes/_authenticated/_dash/storage'
-import { Route as AuthenticatedDashSettingsRouteImport } from './routes/_authenticated/_dash/settings'
-import { Route as AuthenticatedDashNotificationsRouteImport } from './routes/_authenticated/_dash/notifications'
-import { Route as AuthenticatedDashMembersRouteImport } from './routes/_authenticated/_dash/members'
-import { Route as AuthenticatedDashHelpRouteImport } from './routes/_authenticated/_dash/help'
-import { Route as AuthenticatedDashDashboardRouteImport } from './routes/_authenticated/_dash/dashboard'
-import { Route as AuthenticatedDashConnectorsRouteImport } from './routes/_authenticated/_dash/connectors'
-import { Route as AuthenticatedDashAuditRouteImport } from './routes/_authenticated/_dash/audit'
-import { Route as AuthenticatedDashAppFeedbackRouteImport } from './routes/_authenticated/_dash/app-feedback'
-import { Route as AuthenticatedDashApiKeysRouteImport } from './routes/_authenticated/_dash/api-keys'
-import { Route as AuthenticatedDashApiDocsRouteImport } from './routes/_authenticated/_dash/api-docs'
+import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as AuthenticatedWelcomeRouteImport } from './routes/_authenticated/welcome'
+import { Route as DocsDatasetIdRouteImport } from './routes/docs.$datasetId'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as JoinRefRouteImport } from './routes/join.$ref'
+import { Route as PortalOrgSlugRouteImport } from './routes/portal.$orgSlug'
 import { Route as AuthenticatedDashAlertsRouteImport } from './routes/_authenticated/_dash/alerts'
-import { Route as AuthenticatedDashDatasetsIndexRouteImport } from './routes/_authenticated/_dash/datasets.index'
+import { Route as AuthenticatedDashApiDocsRouteImport } from './routes/_authenticated/_dash/api-docs'
+import { Route as AuthenticatedDashApiKeysRouteImport } from './routes/_authenticated/_dash/api-keys'
+import { Route as AuthenticatedDashAppFeedbackRouteImport } from './routes/_authenticated/_dash/app-feedback'
+import { Route as AuthenticatedDashAuditRouteImport } from './routes/_authenticated/_dash/audit'
+import { Route as AuthenticatedDashConnectorsRouteImport } from './routes/_authenticated/_dash/connectors'
+import { Route as AuthenticatedDashDashboardRouteImport } from './routes/_authenticated/_dash/dashboard'
+import { Route as AuthenticatedDashHelpRouteImport } from './routes/_authenticated/_dash/help'
+import { Route as AuthenticatedDashLogsRouteImport } from './routes/_authenticated/_dash/logs'
+import { Route as AuthenticatedDashMembersRouteImport } from './routes/_authenticated/_dash/members'
+import { Route as AuthenticatedDashNotificationsRouteImport } from './routes/_authenticated/_dash/notifications'
+import { Route as AuthenticatedDashSettingsRouteImport } from './routes/_authenticated/_dash/settings'
+import { Route as AuthenticatedDashStorageRouteImport } from './routes/_authenticated/_dash/storage'
+import { Route as AuthenticatedDashWorkspacesRouteImport } from './routes/_authenticated/_dash/workspaces'
+import { Route as ApiPublicConfigRouteImport } from './routes/api/public/config'
+import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
+import { Route as ApiPublicMetricsRouteImport } from './routes/api/public/metrics'
+import { Route as ApiPublicReadyRouteImport } from './routes/api/public/ready'
 import { Route as AuthenticatedDashAdminIndexRouteImport } from './routes/_authenticated/_dash/admin.index'
-import { Route as ApiV1DatasetsDatasetIdRouteImport } from './routes/api/v1/datasets.$datasetId'
-import { Route as ApiPublicWorkerReportRouteImport } from './routes/api/public/worker/report'
-import { Route as ApiPublicWorkerIngestRouteImport } from './routes/api/public/worker/ingest'
-import { Route as ApiPublicWorkerConnectorsRouteImport } from './routes/api/public/worker/connectors'
-import { Route as ApiPublicPortalOrgSlugRouteImport } from './routes/api/public/portal.$orgSlug'
-import { Route as ApiPublicInboundWebhookRouteImport } from './routes/api/public/inbound/webhook'
-import { Route as ApiPublicInboundPostmarkRouteImport } from './routes/api/public/inbound/postmark'
-import { Route as ApiPublicAuthRecoverRouteImport } from './routes/api/public/auth/recover'
-import { Route as AuthenticatedDashDatasetsPdfReviewsRouteImport } from './routes/_authenticated/_dash/datasets.pdf-reviews'
-import { Route as AuthenticatedDashDatasetsNewRouteImport } from './routes/_authenticated/_dash/datasets.new'
-import { Route as AuthenticatedDashDatasetsDatasetIdRouteImport } from './routes/_authenticated/_dash/datasets.$datasetId'
-import { Route as AuthenticatedDashAdminWorkspacesRouteImport } from './routes/_authenticated/_dash/admin.workspaces'
-import { Route as AuthenticatedDashAdminUsageRouteImport } from './routes/_authenticated/_dash/admin.usage'
-import { Route as AuthenticatedDashAdminTeamRouteImport } from './routes/_authenticated/_dash/admin.team'
-import { Route as AuthenticatedDashAdminStorageRouteImport } from './routes/_authenticated/_dash/admin.storage'
-import { Route as AuthenticatedDashAdminSecurityRouteImport } from './routes/_authenticated/_dash/admin.security'
-import { Route as AuthenticatedDashAdminOrganizationRouteImport } from './routes/_authenticated/_dash/admin.organization'
-import { Route as AuthenticatedDashAdminFeedbackRouteImport } from './routes/_authenticated/_dash/admin.feedback'
-import { Route as AuthenticatedDashAdminEmailIngestRouteImport } from './routes/_authenticated/_dash/admin.email-ingest'
-import { Route as AuthenticatedDashAdminConnectorsRouteImport } from './routes/_authenticated/_dash/admin.connectors'
-import { Route as AuthenticatedDashAdminAuthenticationRouteImport } from './routes/_authenticated/_dash/admin.authentication'
-import { Route as AuthenticatedDashAdminAuditRouteImport } from './routes/_authenticated/_dash/admin.audit'
-import { Route as AuthenticatedDashAdminApiKeysRouteImport } from './routes/_authenticated/_dash/admin.api-keys'
-import { Route as AuthenticatedDashAdminApiDocsRouteImport } from './routes/_authenticated/_dash/admin.api-docs'
-import { Route as AuthenticatedDashAdminAlertsRouteImport } from './routes/_authenticated/_dash/admin.alerts'
 import { Route as AuthenticatedDashAdminAiRouteImport } from './routes/_authenticated/_dash/admin.ai'
-import { Route as ApiV1DatasetsDatasetIdOpenapiDotjsonRouteImport } from './routes/api/v1/datasets.$datasetId.openapi[.]json'
-import { Route as ApiV1DatasetsDatasetIdLineageDotjsonRouteImport } from './routes/api/v1/datasets.$datasetId.lineage[.]json'
-import { Route as ApiV1DatasetsDatasetIdContractDotyamlRouteImport } from './routes/api/v1/datasets.$datasetId.contract[.]yaml'
-import { Route as ApiV1DatasetsDatasetIdContractDotjsonRouteImport } from './routes/api/v1/datasets.$datasetId.contract[.]json'
+import { Route as AuthenticatedDashAdminAlertsRouteImport } from './routes/_authenticated/_dash/admin.alerts'
+import { Route as AuthenticatedDashAdminApiDocsRouteImport } from './routes/_authenticated/_dash/admin.api-docs'
+import { Route as AuthenticatedDashAdminApiKeysRouteImport } from './routes/_authenticated/_dash/admin.api-keys'
+import { Route as AuthenticatedDashAdminAuditRouteImport } from './routes/_authenticated/_dash/admin.audit'
+import { Route as AuthenticatedDashAdminAuthenticationRouteImport } from './routes/_authenticated/_dash/admin.authentication'
+import { Route as AuthenticatedDashAdminConnectorsRouteImport } from './routes/_authenticated/_dash/admin.connectors'
+import { Route as AuthenticatedDashAdminEmailIngestRouteImport } from './routes/_authenticated/_dash/admin.email-ingest'
+import { Route as AuthenticatedDashAdminFeedbackRouteImport } from './routes/_authenticated/_dash/admin.feedback'
+import { Route as AuthenticatedDashAdminOrganizationRouteImport } from './routes/_authenticated/_dash/admin.organization'
+import { Route as AuthenticatedDashAdminSecurityRouteImport } from './routes/_authenticated/_dash/admin.security'
+import { Route as AuthenticatedDashAdminStorageRouteImport } from './routes/_authenticated/_dash/admin.storage'
+import { Route as AuthenticatedDashAdminTeamRouteImport } from './routes/_authenticated/_dash/admin.team'
+import { Route as AuthenticatedDashAdminUsageRouteImport } from './routes/_authenticated/_dash/admin.usage'
+import { Route as AuthenticatedDashAdminWorkspacesRouteImport } from './routes/_authenticated/_dash/admin.workspaces'
+import { Route as AuthenticatedDashDatasetsIndexRouteImport } from './routes/_authenticated/_dash/datasets.index'
+import { Route as AuthenticatedDashDatasetsDatasetIdRouteImport } from './routes/_authenticated/_dash/datasets.$datasetId'
+import { Route as AuthenticatedDashDatasetsNewRouteImport } from './routes/_authenticated/_dash/datasets.new'
+import { Route as AuthenticatedDashDatasetsPdfReviewsRouteImport } from './routes/_authenticated/_dash/datasets.pdf-reviews'
+import { Route as ApiPublicAuthRecoverRouteImport } from './routes/api/public/auth/recover'
+import { Route as ApiPublicAuthResolveLoginRouteImport } from './routes/api/public/auth/resolve-login'
+import { Route as ApiPublicAuthUsernameAvailableRouteImport } from './routes/api/public/auth/username-available'
+import { Route as ApiPublicInboundPostmarkRouteImport } from './routes/api/public/inbound/postmark'
+import { Route as ApiPublicInboundWebhookRouteImport } from './routes/api/public/inbound/webhook'
+import { Route as ApiPublicPortalOrgSlugRouteImport } from './routes/api/public/portal.$orgSlug'
+import { Route as ApiPublicWorkerConnectorsRouteImport } from './routes/api/public/worker/connectors'
+import { Route as ApiPublicWorkerIngestRouteImport } from './routes/api/public/worker/ingest'
+import { Route as ApiPublicWorkerReportRouteImport } from './routes/api/public/worker/report'
+import { Route as ApiV1DatasetsDatasetIdRouteImport } from './routes/api/v1/datasets.$datasetId'
 import { Route as ApiV1DatasetsDatasetIdSheetRouteImport } from './routes/api/v1/datasets.$datasetId.$sheet'
-import { Route as ApiV1DatasetsDatasetIdSheetSchemaRouteImport } from './routes/api/v1/datasets.$datasetId.$sheet.schema'
+import { Route as ApiV1DatasetsDatasetIdContractDotjsonRouteImport } from './routes/api/v1/datasets.$datasetId.contract[.]json'
+import { Route as ApiV1DatasetsDatasetIdContractDotyamlRouteImport } from './routes/api/v1/datasets.$datasetId.contract[.]yaml'
+import { Route as ApiV1DatasetsDatasetIdLineageDotjsonRouteImport } from './routes/api/v1/datasets.$datasetId.lineage[.]json'
+import { Route as ApiV1DatasetsDatasetIdOpenapiDotjsonRouteImport } from './routes/api/v1/datasets.$datasetId.openapi[.]json'
 import { Route as ApiV1DatasetsDatasetIdSheetExportRouteImport } from './routes/api/v1/datasets.$datasetId.$sheet.export'
+import { Route as ApiV1DatasetsDatasetIdSheetSchemaRouteImport } from './routes/api/v1/datasets.$datasetId.$sheet.schema'
 import { Route as ApiV1DatasetsDatasetIdVersionsVersionNoContractDotjsonRouteImport } from './routes/api/v1/datasets.$datasetId.versions.$versionNo.contract[.]json'
 
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const FeedbackRoute = FeedbackRouteImport.update({
-  id: '/feedback',
-  path: '/feedback',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FeaturesRoute = FeaturesRouteImport.update({
-  id: '/features',
-  path: '/features',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -95,33 +93,25 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
+const FeaturesRoute = FeaturesRouteImport.update({
+  id: '/features',
+  path: '/features',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const FeedbackRoute = FeedbackRouteImport.update({
+  id: '/feedback',
+  path: '/feedback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PortalOrgSlugRoute = PortalOrgSlugRouteImport.update({
-  id: '/portal/$orgSlug',
-  path: '/portal/$orgSlug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InviteTokenRoute = InviteTokenRouteImport.update({
-  id: '/invite/$token',
-  path: '/invite/$token',
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DocsDatasetIdRoute = DocsDatasetIdRouteImport.update({
-  id: '/docs/$datasetId',
-  path: '/docs/$datasetId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedWelcomeRoute = AuthenticatedWelcomeRouteImport.update({
-  id: '/welcome',
-  path: '/welcome',
+const AuthenticatedDashRoute = AuthenticatedDashRouteImport.update({
+  id: '/_dash',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
@@ -129,86 +119,40 @@ const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedDashRoute = AuthenticatedDashRouteImport.update({
-  id: '/_dash',
+const AuthenticatedWelcomeRoute = AuthenticatedWelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const ApiPublicReadyRoute = ApiPublicReadyRouteImport.update({
-  id: '/api/public/ready',
-  path: '/api/public/ready',
+const DocsDatasetIdRoute = DocsDatasetIdRouteImport.update({
+  id: '/docs/$datasetId',
+  path: '/docs/$datasetId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicMetricsRoute = ApiPublicMetricsRouteImport.update({
-  id: '/api/public/metrics',
-  path: '/api/public/metrics',
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
-  id: '/api/public/health',
-  path: '/api/public/health',
+const JoinRefRoute = JoinRefRouteImport.update({
+  id: '/join/$ref',
+  path: '/join/$ref',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicConfigRoute = ApiPublicConfigRouteImport.update({
-  id: '/api/public/config',
-  path: '/api/public/config',
+const PortalOrgSlugRoute = PortalOrgSlugRouteImport.update({
+  id: '/portal/$orgSlug',
+  path: '/portal/$orgSlug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedDashWorkspacesRoute =
-  AuthenticatedDashWorkspacesRouteImport.update({
-    id: '/workspaces',
-    path: '/workspaces',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashStorageRoute =
-  AuthenticatedDashStorageRouteImport.update({
-    id: '/storage',
-    path: '/storage',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashSettingsRoute =
-  AuthenticatedDashSettingsRouteImport.update({
-    id: '/settings',
-    path: '/settings',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashNotificationsRoute =
-  AuthenticatedDashNotificationsRouteImport.update({
-    id: '/notifications',
-    path: '/notifications',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashMembersRoute =
-  AuthenticatedDashMembersRouteImport.update({
-    id: '/members',
-    path: '/members',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashHelpRoute = AuthenticatedDashHelpRouteImport.update({
-  id: '/help',
-  path: '/help',
+const AuthenticatedDashAlertsRoute = AuthenticatedDashAlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
   getParentRoute: () => AuthenticatedDashRoute,
 } as any)
-const AuthenticatedDashDashboardRoute =
-  AuthenticatedDashDashboardRouteImport.update({
-    id: '/dashboard',
-    path: '/dashboard',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashConnectorsRoute =
-  AuthenticatedDashConnectorsRouteImport.update({
-    id: '/connectors',
-    path: '/connectors',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashAuditRoute = AuthenticatedDashAuditRouteImport.update({
-  id: '/audit',
-  path: '/audit',
-  getParentRoute: () => AuthenticatedDashRoute,
-} as any)
-const AuthenticatedDashAppFeedbackRoute =
-  AuthenticatedDashAppFeedbackRouteImport.update({
-    id: '/app-feedback',
-    path: '/app-feedback',
+const AuthenticatedDashApiDocsRoute =
+  AuthenticatedDashApiDocsRouteImport.update({
+    id: '/api-docs',
+    path: '/api-docs',
     getParentRoute: () => AuthenticatedDashRoute,
   } as any)
 const AuthenticatedDashApiKeysRoute =
@@ -217,171 +161,93 @@ const AuthenticatedDashApiKeysRoute =
     path: '/api-keys',
     getParentRoute: () => AuthenticatedDashRoute,
   } as any)
-const AuthenticatedDashApiDocsRoute =
-  AuthenticatedDashApiDocsRouteImport.update({
-    id: '/api-docs',
-    path: '/api-docs',
+const AuthenticatedDashAppFeedbackRoute =
+  AuthenticatedDashAppFeedbackRouteImport.update({
+    id: '/app-feedback',
+    path: '/app-feedback',
     getParentRoute: () => AuthenticatedDashRoute,
   } as any)
-const AuthenticatedDashAlertsRoute = AuthenticatedDashAlertsRouteImport.update({
-  id: '/alerts',
-  path: '/alerts',
+const AuthenticatedDashAuditRoute = AuthenticatedDashAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
   getParentRoute: () => AuthenticatedDashRoute,
 } as any)
-const AuthenticatedDashDatasetsIndexRoute =
-  AuthenticatedDashDatasetsIndexRouteImport.update({
-    id: '/datasets/',
-    path: '/datasets/',
+const AuthenticatedDashConnectorsRoute =
+  AuthenticatedDashConnectorsRouteImport.update({
+    id: '/connectors',
+    path: '/connectors',
     getParentRoute: () => AuthenticatedDashRoute,
   } as any)
+const AuthenticatedDashDashboardRoute =
+  AuthenticatedDashDashboardRouteImport.update({
+    id: '/dashboard',
+    path: '/dashboard',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashHelpRoute = AuthenticatedDashHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => AuthenticatedDashRoute,
+} as any)
+const AuthenticatedDashLogsRoute = AuthenticatedDashLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => AuthenticatedDashRoute,
+} as any)
+const AuthenticatedDashMembersRoute =
+  AuthenticatedDashMembersRouteImport.update({
+    id: '/members',
+    path: '/members',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashNotificationsRoute =
+  AuthenticatedDashNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashSettingsRoute =
+  AuthenticatedDashSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashStorageRoute =
+  AuthenticatedDashStorageRouteImport.update({
+    id: '/storage',
+    path: '/storage',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashWorkspacesRoute =
+  AuthenticatedDashWorkspacesRouteImport.update({
+    id: '/workspaces',
+    path: '/workspaces',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const ApiPublicConfigRoute = ApiPublicConfigRouteImport.update({
+  id: '/api/public/config',
+  path: '/api/public/config',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
+  id: '/api/public/health',
+  path: '/api/public/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicMetricsRoute = ApiPublicMetricsRouteImport.update({
+  id: '/api/public/metrics',
+  path: '/api/public/metrics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicReadyRoute = ApiPublicReadyRouteImport.update({
+  id: '/api/public/ready',
+  path: '/api/public/ready',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedDashAdminIndexRoute =
   AuthenticatedDashAdminIndexRouteImport.update({
     id: '/admin/',
     path: '/admin/',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const ApiV1DatasetsDatasetIdRoute = ApiV1DatasetsDatasetIdRouteImport.update({
-  id: '/api/v1/datasets/$datasetId',
-  path: '/api/v1/datasets/$datasetId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicWorkerReportRoute = ApiPublicWorkerReportRouteImport.update({
-  id: '/api/public/worker/report',
-  path: '/api/public/worker/report',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicWorkerIngestRoute = ApiPublicWorkerIngestRouteImport.update({
-  id: '/api/public/worker/ingest',
-  path: '/api/public/worker/ingest',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicWorkerConnectorsRoute =
-  ApiPublicWorkerConnectorsRouteImport.update({
-    id: '/api/public/worker/connectors',
-    path: '/api/public/worker/connectors',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicPortalOrgSlugRoute = ApiPublicPortalOrgSlugRouteImport.update({
-  id: '/api/public/portal/$orgSlug',
-  path: '/api/public/portal/$orgSlug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicInboundWebhookRoute = ApiPublicInboundWebhookRouteImport.update({
-  id: '/api/public/inbound/webhook',
-  path: '/api/public/inbound/webhook',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicInboundPostmarkRoute =
-  ApiPublicInboundPostmarkRouteImport.update({
-    id: '/api/public/inbound/postmark',
-    path: '/api/public/inbound/postmark',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicAuthRecoverRoute = ApiPublicAuthRecoverRouteImport.update({
-  id: '/api/public/auth/recover',
-  path: '/api/public/auth/recover',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedDashDatasetsPdfReviewsRoute =
-  AuthenticatedDashDatasetsPdfReviewsRouteImport.update({
-    id: '/datasets/pdf-reviews',
-    path: '/datasets/pdf-reviews',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashDatasetsNewRoute =
-  AuthenticatedDashDatasetsNewRouteImport.update({
-    id: '/datasets/new',
-    path: '/datasets/new',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashDatasetsDatasetIdRoute =
-  AuthenticatedDashDatasetsDatasetIdRouteImport.update({
-    id: '/datasets/$datasetId',
-    path: '/datasets/$datasetId',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashAdminWorkspacesRoute =
-  AuthenticatedDashAdminWorkspacesRouteImport.update({
-    id: '/admin/workspaces',
-    path: '/admin/workspaces',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashAdminUsageRoute =
-  AuthenticatedDashAdminUsageRouteImport.update({
-    id: '/admin/usage',
-    path: '/admin/usage',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashAdminTeamRoute =
-  AuthenticatedDashAdminTeamRouteImport.update({
-    id: '/admin/team',
-    path: '/admin/team',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashAdminStorageRoute =
-  AuthenticatedDashAdminStorageRouteImport.update({
-    id: '/admin/storage',
-    path: '/admin/storage',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashAdminSecurityRoute =
-  AuthenticatedDashAdminSecurityRouteImport.update({
-    id: '/admin/security',
-    path: '/admin/security',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashAdminOrganizationRoute =
-  AuthenticatedDashAdminOrganizationRouteImport.update({
-    id: '/admin/organization',
-    path: '/admin/organization',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashAdminFeedbackRoute =
-  AuthenticatedDashAdminFeedbackRouteImport.update({
-    id: '/admin/feedback',
-    path: '/admin/feedback',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashAdminEmailIngestRoute =
-  AuthenticatedDashAdminEmailIngestRouteImport.update({
-    id: '/admin/email-ingest',
-    path: '/admin/email-ingest',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashAdminConnectorsRoute =
-  AuthenticatedDashAdminConnectorsRouteImport.update({
-    id: '/admin/connectors',
-    path: '/admin/connectors',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashAdminAuthenticationRoute =
-  AuthenticatedDashAdminAuthenticationRouteImport.update({
-    id: '/admin/authentication',
-    path: '/admin/authentication',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashAdminAuditRoute =
-  AuthenticatedDashAdminAuditRouteImport.update({
-    id: '/admin/audit',
-    path: '/admin/audit',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashAdminApiKeysRoute =
-  AuthenticatedDashAdminApiKeysRouteImport.update({
-    id: '/admin/api-keys',
-    path: '/admin/api-keys',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashAdminApiDocsRoute =
-  AuthenticatedDashAdminApiDocsRouteImport.update({
-    id: '/admin/api-docs',
-    path: '/admin/api-docs',
-    getParentRoute: () => AuthenticatedDashRoute,
-  } as any)
-const AuthenticatedDashAdminAlertsRoute =
-  AuthenticatedDashAdminAlertsRouteImport.update({
-    id: '/admin/alerts',
-    path: '/admin/alerts',
     getParentRoute: () => AuthenticatedDashRoute,
   } as any)
 const AuthenticatedDashAdminAiRoute =
@@ -390,22 +256,172 @@ const AuthenticatedDashAdminAiRoute =
     path: '/admin/ai',
     getParentRoute: () => AuthenticatedDashRoute,
   } as any)
-const ApiV1DatasetsDatasetIdOpenapiDotjsonRoute =
-  ApiV1DatasetsDatasetIdOpenapiDotjsonRouteImport.update({
-    id: '/openapi.json',
-    path: '/openapi.json',
-    getParentRoute: () => ApiV1DatasetsDatasetIdRoute,
+const AuthenticatedDashAdminAlertsRoute =
+  AuthenticatedDashAdminAlertsRouteImport.update({
+    id: '/admin/alerts',
+    path: '/admin/alerts',
+    getParentRoute: () => AuthenticatedDashRoute,
   } as any)
-const ApiV1DatasetsDatasetIdLineageDotjsonRoute =
-  ApiV1DatasetsDatasetIdLineageDotjsonRouteImport.update({
-    id: '/lineage.json',
-    path: '/lineage.json',
-    getParentRoute: () => ApiV1DatasetsDatasetIdRoute,
+const AuthenticatedDashAdminApiDocsRoute =
+  AuthenticatedDashAdminApiDocsRouteImport.update({
+    id: '/admin/api-docs',
+    path: '/admin/api-docs',
+    getParentRoute: () => AuthenticatedDashRoute,
   } as any)
-const ApiV1DatasetsDatasetIdContractDotyamlRoute =
-  ApiV1DatasetsDatasetIdContractDotyamlRouteImport.update({
-    id: '/contract.yaml',
-    path: '/contract.yaml',
+const AuthenticatedDashAdminApiKeysRoute =
+  AuthenticatedDashAdminApiKeysRouteImport.update({
+    id: '/admin/api-keys',
+    path: '/admin/api-keys',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashAdminAuditRoute =
+  AuthenticatedDashAdminAuditRouteImport.update({
+    id: '/admin/audit',
+    path: '/admin/audit',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashAdminAuthenticationRoute =
+  AuthenticatedDashAdminAuthenticationRouteImport.update({
+    id: '/admin/authentication',
+    path: '/admin/authentication',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashAdminConnectorsRoute =
+  AuthenticatedDashAdminConnectorsRouteImport.update({
+    id: '/admin/connectors',
+    path: '/admin/connectors',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashAdminEmailIngestRoute =
+  AuthenticatedDashAdminEmailIngestRouteImport.update({
+    id: '/admin/email-ingest',
+    path: '/admin/email-ingest',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashAdminFeedbackRoute =
+  AuthenticatedDashAdminFeedbackRouteImport.update({
+    id: '/admin/feedback',
+    path: '/admin/feedback',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashAdminOrganizationRoute =
+  AuthenticatedDashAdminOrganizationRouteImport.update({
+    id: '/admin/organization',
+    path: '/admin/organization',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashAdminSecurityRoute =
+  AuthenticatedDashAdminSecurityRouteImport.update({
+    id: '/admin/security',
+    path: '/admin/security',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashAdminStorageRoute =
+  AuthenticatedDashAdminStorageRouteImport.update({
+    id: '/admin/storage',
+    path: '/admin/storage',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashAdminTeamRoute =
+  AuthenticatedDashAdminTeamRouteImport.update({
+    id: '/admin/team',
+    path: '/admin/team',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashAdminUsageRoute =
+  AuthenticatedDashAdminUsageRouteImport.update({
+    id: '/admin/usage',
+    path: '/admin/usage',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashAdminWorkspacesRoute =
+  AuthenticatedDashAdminWorkspacesRouteImport.update({
+    id: '/admin/workspaces',
+    path: '/admin/workspaces',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashDatasetsIndexRoute =
+  AuthenticatedDashDatasetsIndexRouteImport.update({
+    id: '/datasets/',
+    path: '/datasets/',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashDatasetsDatasetIdRoute =
+  AuthenticatedDashDatasetsDatasetIdRouteImport.update({
+    id: '/datasets/$datasetId',
+    path: '/datasets/$datasetId',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashDatasetsNewRoute =
+  AuthenticatedDashDatasetsNewRouteImport.update({
+    id: '/datasets/new',
+    path: '/datasets/new',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashDatasetsPdfReviewsRoute =
+  AuthenticatedDashDatasetsPdfReviewsRouteImport.update({
+    id: '/datasets/pdf-reviews',
+    path: '/datasets/pdf-reviews',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const ApiPublicAuthRecoverRoute = ApiPublicAuthRecoverRouteImport.update({
+  id: '/api/public/auth/recover',
+  path: '/api/public/auth/recover',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicAuthResolveLoginRoute =
+  ApiPublicAuthResolveLoginRouteImport.update({
+    id: '/api/public/auth/resolve-login',
+    path: '/api/public/auth/resolve-login',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicAuthUsernameAvailableRoute =
+  ApiPublicAuthUsernameAvailableRouteImport.update({
+    id: '/api/public/auth/username-available',
+    path: '/api/public/auth/username-available',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicInboundPostmarkRoute =
+  ApiPublicInboundPostmarkRouteImport.update({
+    id: '/api/public/inbound/postmark',
+    path: '/api/public/inbound/postmark',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicInboundWebhookRoute = ApiPublicInboundWebhookRouteImport.update({
+  id: '/api/public/inbound/webhook',
+  path: '/api/public/inbound/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPortalOrgSlugRoute = ApiPublicPortalOrgSlugRouteImport.update({
+  id: '/api/public/portal/$orgSlug',
+  path: '/api/public/portal/$orgSlug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicWorkerConnectorsRoute =
+  ApiPublicWorkerConnectorsRouteImport.update({
+    id: '/api/public/worker/connectors',
+    path: '/api/public/worker/connectors',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicWorkerIngestRoute = ApiPublicWorkerIngestRouteImport.update({
+  id: '/api/public/worker/ingest',
+  path: '/api/public/worker/ingest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicWorkerReportRoute = ApiPublicWorkerReportRouteImport.update({
+  id: '/api/public/worker/report',
+  path: '/api/public/worker/report',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1DatasetsDatasetIdRoute = ApiV1DatasetsDatasetIdRouteImport.update({
+  id: '/api/v1/datasets/$datasetId',
+  path: '/api/v1/datasets/$datasetId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1DatasetsDatasetIdSheetRoute =
+  ApiV1DatasetsDatasetIdSheetRouteImport.update({
+    id: '/$sheet',
+    path: '/$sheet',
     getParentRoute: () => ApiV1DatasetsDatasetIdRoute,
   } as any)
 const ApiV1DatasetsDatasetIdContractDotjsonRoute =
@@ -414,22 +430,34 @@ const ApiV1DatasetsDatasetIdContractDotjsonRoute =
     path: '/contract.json',
     getParentRoute: () => ApiV1DatasetsDatasetIdRoute,
   } as any)
-const ApiV1DatasetsDatasetIdSheetRoute =
-  ApiV1DatasetsDatasetIdSheetRouteImport.update({
-    id: '/$sheet',
-    path: '/$sheet',
+const ApiV1DatasetsDatasetIdContractDotyamlRoute =
+  ApiV1DatasetsDatasetIdContractDotyamlRouteImport.update({
+    id: '/contract.yaml',
+    path: '/contract.yaml',
     getParentRoute: () => ApiV1DatasetsDatasetIdRoute,
   } as any)
-const ApiV1DatasetsDatasetIdSheetSchemaRoute =
-  ApiV1DatasetsDatasetIdSheetSchemaRouteImport.update({
-    id: '/schema',
-    path: '/schema',
-    getParentRoute: () => ApiV1DatasetsDatasetIdSheetRoute,
+const ApiV1DatasetsDatasetIdLineageDotjsonRoute =
+  ApiV1DatasetsDatasetIdLineageDotjsonRouteImport.update({
+    id: '/lineage.json',
+    path: '/lineage.json',
+    getParentRoute: () => ApiV1DatasetsDatasetIdRoute,
+  } as any)
+const ApiV1DatasetsDatasetIdOpenapiDotjsonRoute =
+  ApiV1DatasetsDatasetIdOpenapiDotjsonRouteImport.update({
+    id: '/openapi.json',
+    path: '/openapi.json',
+    getParentRoute: () => ApiV1DatasetsDatasetIdRoute,
   } as any)
 const ApiV1DatasetsDatasetIdSheetExportRoute =
   ApiV1DatasetsDatasetIdSheetExportRouteImport.update({
     id: '/export',
     path: '/export',
+    getParentRoute: () => ApiV1DatasetsDatasetIdSheetRoute,
+  } as any)
+const ApiV1DatasetsDatasetIdSheetSchemaRoute =
+  ApiV1DatasetsDatasetIdSheetSchemaRouteImport.update({
+    id: '/schema',
+    path: '/schema',
     getParentRoute: () => ApiV1DatasetsDatasetIdSheetRoute,
   } as any)
 const ApiV1DatasetsDatasetIdVersionsVersionNoContractDotjsonRoute =
@@ -449,6 +477,7 @@ export interface FileRoutesByFullPath {
   '/welcome': typeof AuthenticatedWelcomeRoute
   '/docs/$datasetId': typeof DocsDatasetIdRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/join/$ref': typeof JoinRefRoute
   '/portal/$orgSlug': typeof PortalOrgSlugRoute
   '/alerts': typeof AuthenticatedDashAlertsRoute
   '/api-docs': typeof AuthenticatedDashApiDocsRoute
@@ -458,6 +487,7 @@ export interface FileRoutesByFullPath {
   '/connectors': typeof AuthenticatedDashConnectorsRoute
   '/dashboard': typeof AuthenticatedDashDashboardRoute
   '/help': typeof AuthenticatedDashHelpRoute
+  '/logs': typeof AuthenticatedDashLogsRoute
   '/members': typeof AuthenticatedDashMembersRoute
   '/notifications': typeof AuthenticatedDashNotificationsRoute
   '/settings': typeof AuthenticatedDashSettingsRoute
@@ -486,6 +516,8 @@ export interface FileRoutesByFullPath {
   '/datasets/new': typeof AuthenticatedDashDatasetsNewRoute
   '/datasets/pdf-reviews': typeof AuthenticatedDashDatasetsPdfReviewsRoute
   '/api/public/auth/recover': typeof ApiPublicAuthRecoverRoute
+  '/api/public/auth/resolve-login': typeof ApiPublicAuthResolveLoginRoute
+  '/api/public/auth/username-available': typeof ApiPublicAuthUsernameAvailableRoute
   '/api/public/inbound/postmark': typeof ApiPublicInboundPostmarkRoute
   '/api/public/inbound/webhook': typeof ApiPublicInboundWebhookRoute
   '/api/public/portal/$orgSlug': typeof ApiPublicPortalOrgSlugRoute
@@ -514,6 +546,7 @@ export interface FileRoutesByTo {
   '/welcome': typeof AuthenticatedWelcomeRoute
   '/docs/$datasetId': typeof DocsDatasetIdRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/join/$ref': typeof JoinRefRoute
   '/portal/$orgSlug': typeof PortalOrgSlugRoute
   '/alerts': typeof AuthenticatedDashAlertsRoute
   '/api-docs': typeof AuthenticatedDashApiDocsRoute
@@ -523,6 +556,7 @@ export interface FileRoutesByTo {
   '/connectors': typeof AuthenticatedDashConnectorsRoute
   '/dashboard': typeof AuthenticatedDashDashboardRoute
   '/help': typeof AuthenticatedDashHelpRoute
+  '/logs': typeof AuthenticatedDashLogsRoute
   '/members': typeof AuthenticatedDashMembersRoute
   '/notifications': typeof AuthenticatedDashNotificationsRoute
   '/settings': typeof AuthenticatedDashSettingsRoute
@@ -551,6 +585,8 @@ export interface FileRoutesByTo {
   '/datasets/new': typeof AuthenticatedDashDatasetsNewRoute
   '/datasets/pdf-reviews': typeof AuthenticatedDashDatasetsPdfReviewsRoute
   '/api/public/auth/recover': typeof ApiPublicAuthRecoverRoute
+  '/api/public/auth/resolve-login': typeof ApiPublicAuthResolveLoginRoute
+  '/api/public/auth/username-available': typeof ApiPublicAuthUsernameAvailableRoute
   '/api/public/inbound/postmark': typeof ApiPublicInboundPostmarkRoute
   '/api/public/inbound/webhook': typeof ApiPublicInboundWebhookRoute
   '/api/public/portal/$orgSlug': typeof ApiPublicPortalOrgSlugRoute
@@ -582,6 +618,7 @@ export interface FileRoutesById {
   '/_authenticated/welcome': typeof AuthenticatedWelcomeRoute
   '/docs/$datasetId': typeof DocsDatasetIdRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/join/$ref': typeof JoinRefRoute
   '/portal/$orgSlug': typeof PortalOrgSlugRoute
   '/_authenticated/_dash/alerts': typeof AuthenticatedDashAlertsRoute
   '/_authenticated/_dash/api-docs': typeof AuthenticatedDashApiDocsRoute
@@ -591,6 +628,7 @@ export interface FileRoutesById {
   '/_authenticated/_dash/connectors': typeof AuthenticatedDashConnectorsRoute
   '/_authenticated/_dash/dashboard': typeof AuthenticatedDashDashboardRoute
   '/_authenticated/_dash/help': typeof AuthenticatedDashHelpRoute
+  '/_authenticated/_dash/logs': typeof AuthenticatedDashLogsRoute
   '/_authenticated/_dash/members': typeof AuthenticatedDashMembersRoute
   '/_authenticated/_dash/notifications': typeof AuthenticatedDashNotificationsRoute
   '/_authenticated/_dash/settings': typeof AuthenticatedDashSettingsRoute
@@ -619,6 +657,8 @@ export interface FileRoutesById {
   '/_authenticated/_dash/datasets/new': typeof AuthenticatedDashDatasetsNewRoute
   '/_authenticated/_dash/datasets/pdf-reviews': typeof AuthenticatedDashDatasetsPdfReviewsRoute
   '/api/public/auth/recover': typeof ApiPublicAuthRecoverRoute
+  '/api/public/auth/resolve-login': typeof ApiPublicAuthResolveLoginRoute
+  '/api/public/auth/username-available': typeof ApiPublicAuthUsernameAvailableRoute
   '/api/public/inbound/postmark': typeof ApiPublicInboundPostmarkRoute
   '/api/public/inbound/webhook': typeof ApiPublicInboundWebhookRoute
   '/api/public/portal/$orgSlug': typeof ApiPublicPortalOrgSlugRoute
@@ -649,6 +689,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/docs/$datasetId'
     | '/invite/$token'
+    | '/join/$ref'
     | '/portal/$orgSlug'
     | '/alerts'
     | '/api-docs'
@@ -658,6 +699,7 @@ export interface FileRouteTypes {
     | '/connectors'
     | '/dashboard'
     | '/help'
+    | '/logs'
     | '/members'
     | '/notifications'
     | '/settings'
@@ -686,6 +728,8 @@ export interface FileRouteTypes {
     | '/datasets/new'
     | '/datasets/pdf-reviews'
     | '/api/public/auth/recover'
+    | '/api/public/auth/resolve-login'
+    | '/api/public/auth/username-available'
     | '/api/public/inbound/postmark'
     | '/api/public/inbound/webhook'
     | '/api/public/portal/$orgSlug'
@@ -714,6 +758,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/docs/$datasetId'
     | '/invite/$token'
+    | '/join/$ref'
     | '/portal/$orgSlug'
     | '/alerts'
     | '/api-docs'
@@ -723,6 +768,7 @@ export interface FileRouteTypes {
     | '/connectors'
     | '/dashboard'
     | '/help'
+    | '/logs'
     | '/members'
     | '/notifications'
     | '/settings'
@@ -751,6 +797,8 @@ export interface FileRouteTypes {
     | '/datasets/new'
     | '/datasets/pdf-reviews'
     | '/api/public/auth/recover'
+    | '/api/public/auth/resolve-login'
+    | '/api/public/auth/username-available'
     | '/api/public/inbound/postmark'
     | '/api/public/inbound/webhook'
     | '/api/public/portal/$orgSlug'
@@ -781,6 +829,7 @@ export interface FileRouteTypes {
     | '/_authenticated/welcome'
     | '/docs/$datasetId'
     | '/invite/$token'
+    | '/join/$ref'
     | '/portal/$orgSlug'
     | '/_authenticated/_dash/alerts'
     | '/_authenticated/_dash/api-docs'
@@ -790,6 +839,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_dash/connectors'
     | '/_authenticated/_dash/dashboard'
     | '/_authenticated/_dash/help'
+    | '/_authenticated/_dash/logs'
     | '/_authenticated/_dash/members'
     | '/_authenticated/_dash/notifications'
     | '/_authenticated/_dash/settings'
@@ -818,6 +868,8 @@ export interface FileRouteTypes {
     | '/_authenticated/_dash/datasets/new'
     | '/_authenticated/_dash/datasets/pdf-reviews'
     | '/api/public/auth/recover'
+    | '/api/public/auth/resolve-login'
+    | '/api/public/auth/username-available'
     | '/api/public/inbound/postmark'
     | '/api/public/inbound/webhook'
     | '/api/public/portal/$orgSlug'
@@ -846,12 +898,15 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   DocsDatasetIdRoute: typeof DocsDatasetIdRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  JoinRefRoute: typeof JoinRefRoute
   PortalOrgSlugRoute: typeof PortalOrgSlugRoute
   ApiPublicConfigRoute: typeof ApiPublicConfigRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicMetricsRoute: typeof ApiPublicMetricsRoute
   ApiPublicReadyRoute: typeof ApiPublicReadyRoute
   ApiPublicAuthRecoverRoute: typeof ApiPublicAuthRecoverRoute
+  ApiPublicAuthResolveLoginRoute: typeof ApiPublicAuthResolveLoginRoute
+  ApiPublicAuthUsernameAvailableRoute: typeof ApiPublicAuthUsernameAvailableRoute
   ApiPublicInboundPostmarkRoute: typeof ApiPublicInboundPostmarkRoute
   ApiPublicInboundWebhookRoute: typeof ApiPublicInboundWebhookRoute
   ApiPublicPortalOrgSlugRoute: typeof ApiPublicPortalOrgSlugRoute
@@ -863,32 +918,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/feedback': {
-      id: '/feedback'
-      path: '/feedback'
-      fullPath: '/feedback'
-      preLoaderRoute: typeof FeedbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/features': {
-      id: '/features'
-      path: '/features'
-      fullPath: '/features'
-      preLoaderRoute: typeof FeaturesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -898,39 +932,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/features': {
+      id: '/features'
+      path: '/features'
+      fullPath: '/features'
+      preLoaderRoute: typeof FeaturesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/feedback': {
+      id: '/feedback'
+      path: '/feedback'
+      fullPath: '/feedback'
+      preLoaderRoute: typeof FeedbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/_dash': {
+      id: '/_authenticated/_dash'
+      path: ''
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/portal/$orgSlug': {
-      id: '/portal/$orgSlug'
-      path: '/portal/$orgSlug'
-      fullPath: '/portal/$orgSlug'
-      preLoaderRoute: typeof PortalOrgSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/invite/$token': {
-      id: '/invite/$token'
-      path: '/invite/$token'
-      fullPath: '/invite/$token'
-      preLoaderRoute: typeof InviteTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/docs/$datasetId': {
-      id: '/docs/$datasetId'
-      path: '/docs/$datasetId'
-      fullPath: '/docs/$datasetId'
-      preLoaderRoute: typeof DocsDatasetIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/welcome': {
-      id: '/_authenticated/welcome'
-      path: '/welcome'
-      fullPath: '/welcome'
-      preLoaderRoute: typeof AuthenticatedWelcomeRouteImport
+      preLoaderRoute: typeof AuthenticatedDashRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/onboarding': {
@@ -940,116 +976,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/_dash': {
-      id: '/_authenticated/_dash'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedDashRouteImport
+    '/_authenticated/welcome': {
+      id: '/_authenticated/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof AuthenticatedWelcomeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/api/public/ready': {
-      id: '/api/public/ready'
-      path: '/api/public/ready'
-      fullPath: '/api/public/ready'
-      preLoaderRoute: typeof ApiPublicReadyRouteImport
+    '/docs/$datasetId': {
+      id: '/docs/$datasetId'
+      path: '/docs/$datasetId'
+      fullPath: '/docs/$datasetId'
+      preLoaderRoute: typeof DocsDatasetIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/metrics': {
-      id: '/api/public/metrics'
-      path: '/api/public/metrics'
-      fullPath: '/api/public/metrics'
-      preLoaderRoute: typeof ApiPublicMetricsRouteImport
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/health': {
-      id: '/api/public/health'
-      path: '/api/public/health'
-      fullPath: '/api/public/health'
-      preLoaderRoute: typeof ApiPublicHealthRouteImport
+    '/join/$ref': {
+      id: '/join/$ref'
+      path: '/join/$ref'
+      fullPath: '/join/$ref'
+      preLoaderRoute: typeof JoinRefRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/config': {
-      id: '/api/public/config'
-      path: '/api/public/config'
-      fullPath: '/api/public/config'
-      preLoaderRoute: typeof ApiPublicConfigRouteImport
+    '/portal/$orgSlug': {
+      id: '/portal/$orgSlug'
+      path: '/portal/$orgSlug'
+      fullPath: '/portal/$orgSlug'
+      preLoaderRoute: typeof PortalOrgSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/_dash/workspaces': {
-      id: '/_authenticated/_dash/workspaces'
-      path: '/workspaces'
-      fullPath: '/workspaces'
-      preLoaderRoute: typeof AuthenticatedDashWorkspacesRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/storage': {
-      id: '/_authenticated/_dash/storage'
-      path: '/storage'
-      fullPath: '/storage'
-      preLoaderRoute: typeof AuthenticatedDashStorageRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/settings': {
-      id: '/_authenticated/_dash/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AuthenticatedDashSettingsRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/notifications': {
-      id: '/_authenticated/_dash/notifications'
-      path: '/notifications'
-      fullPath: '/notifications'
-      preLoaderRoute: typeof AuthenticatedDashNotificationsRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/members': {
-      id: '/_authenticated/_dash/members'
-      path: '/members'
-      fullPath: '/members'
-      preLoaderRoute: typeof AuthenticatedDashMembersRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/help': {
-      id: '/_authenticated/_dash/help'
-      path: '/help'
-      fullPath: '/help'
-      preLoaderRoute: typeof AuthenticatedDashHelpRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/dashboard': {
-      id: '/_authenticated/_dash/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashDashboardRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/connectors': {
-      id: '/_authenticated/_dash/connectors'
-      path: '/connectors'
-      fullPath: '/connectors'
-      preLoaderRoute: typeof AuthenticatedDashConnectorsRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/audit': {
-      id: '/_authenticated/_dash/audit'
-      path: '/audit'
-      fullPath: '/audit'
-      preLoaderRoute: typeof AuthenticatedDashAuditRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/app-feedback': {
-      id: '/_authenticated/_dash/app-feedback'
-      path: '/app-feedback'
-      fullPath: '/app-feedback'
-      preLoaderRoute: typeof AuthenticatedDashAppFeedbackRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/api-keys': {
-      id: '/_authenticated/_dash/api-keys'
-      path: '/api-keys'
-      fullPath: '/api-keys'
-      preLoaderRoute: typeof AuthenticatedDashApiKeysRouteImport
+    '/_authenticated/_dash/alerts': {
+      id: '/_authenticated/_dash/alerts'
+      path: '/alerts'
+      fullPath: '/alerts'
+      preLoaderRoute: typeof AuthenticatedDashAlertsRouteImport
       parentRoute: typeof AuthenticatedDashRoute
     }
     '/_authenticated/_dash/api-docs': {
@@ -1059,200 +1025,123 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashApiDocsRouteImport
       parentRoute: typeof AuthenticatedDashRoute
     }
-    '/_authenticated/_dash/alerts': {
-      id: '/_authenticated/_dash/alerts'
-      path: '/alerts'
-      fullPath: '/alerts'
-      preLoaderRoute: typeof AuthenticatedDashAlertsRouteImport
+    '/_authenticated/_dash/api-keys': {
+      id: '/_authenticated/_dash/api-keys'
+      path: '/api-keys'
+      fullPath: '/api-keys'
+      preLoaderRoute: typeof AuthenticatedDashApiKeysRouteImport
       parentRoute: typeof AuthenticatedDashRoute
     }
-    '/_authenticated/_dash/datasets/': {
-      id: '/_authenticated/_dash/datasets/'
-      path: '/datasets'
-      fullPath: '/datasets/'
-      preLoaderRoute: typeof AuthenticatedDashDatasetsIndexRouteImport
+    '/_authenticated/_dash/app-feedback': {
+      id: '/_authenticated/_dash/app-feedback'
+      path: '/app-feedback'
+      fullPath: '/app-feedback'
+      preLoaderRoute: typeof AuthenticatedDashAppFeedbackRouteImport
       parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/audit': {
+      id: '/_authenticated/_dash/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuthenticatedDashAuditRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/connectors': {
+      id: '/_authenticated/_dash/connectors'
+      path: '/connectors'
+      fullPath: '/connectors'
+      preLoaderRoute: typeof AuthenticatedDashConnectorsRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/dashboard': {
+      id: '/_authenticated/_dash/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashDashboardRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/help': {
+      id: '/_authenticated/_dash/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof AuthenticatedDashHelpRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/logs': {
+      id: '/_authenticated/_dash/logs'
+      path: '/logs'
+      fullPath: '/logs'
+      preLoaderRoute: typeof AuthenticatedDashLogsRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/members': {
+      id: '/_authenticated/_dash/members'
+      path: '/members'
+      fullPath: '/members'
+      preLoaderRoute: typeof AuthenticatedDashMembersRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/notifications': {
+      id: '/_authenticated/_dash/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedDashNotificationsRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/settings': {
+      id: '/_authenticated/_dash/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedDashSettingsRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/storage': {
+      id: '/_authenticated/_dash/storage'
+      path: '/storage'
+      fullPath: '/storage'
+      preLoaderRoute: typeof AuthenticatedDashStorageRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/workspaces': {
+      id: '/_authenticated/_dash/workspaces'
+      path: '/workspaces'
+      fullPath: '/workspaces'
+      preLoaderRoute: typeof AuthenticatedDashWorkspacesRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/api/public/config': {
+      id: '/api/public/config'
+      path: '/api/public/config'
+      fullPath: '/api/public/config'
+      preLoaderRoute: typeof ApiPublicConfigRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/health': {
+      id: '/api/public/health'
+      path: '/api/public/health'
+      fullPath: '/api/public/health'
+      preLoaderRoute: typeof ApiPublicHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/metrics': {
+      id: '/api/public/metrics'
+      path: '/api/public/metrics'
+      fullPath: '/api/public/metrics'
+      preLoaderRoute: typeof ApiPublicMetricsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/ready': {
+      id: '/api/public/ready'
+      path: '/api/public/ready'
+      fullPath: '/api/public/ready'
+      preLoaderRoute: typeof ApiPublicReadyRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/_dash/admin/': {
       id: '/_authenticated/_dash/admin/'
       path: '/admin'
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedDashAdminIndexRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/api/v1/datasets/$datasetId': {
-      id: '/api/v1/datasets/$datasetId'
-      path: '/api/v1/datasets/$datasetId'
-      fullPath: '/api/v1/datasets/$datasetId'
-      preLoaderRoute: typeof ApiV1DatasetsDatasetIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/worker/report': {
-      id: '/api/public/worker/report'
-      path: '/api/public/worker/report'
-      fullPath: '/api/public/worker/report'
-      preLoaderRoute: typeof ApiPublicWorkerReportRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/worker/ingest': {
-      id: '/api/public/worker/ingest'
-      path: '/api/public/worker/ingest'
-      fullPath: '/api/public/worker/ingest'
-      preLoaderRoute: typeof ApiPublicWorkerIngestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/worker/connectors': {
-      id: '/api/public/worker/connectors'
-      path: '/api/public/worker/connectors'
-      fullPath: '/api/public/worker/connectors'
-      preLoaderRoute: typeof ApiPublicWorkerConnectorsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/portal/$orgSlug': {
-      id: '/api/public/portal/$orgSlug'
-      path: '/api/public/portal/$orgSlug'
-      fullPath: '/api/public/portal/$orgSlug'
-      preLoaderRoute: typeof ApiPublicPortalOrgSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/inbound/webhook': {
-      id: '/api/public/inbound/webhook'
-      path: '/api/public/inbound/webhook'
-      fullPath: '/api/public/inbound/webhook'
-      preLoaderRoute: typeof ApiPublicInboundWebhookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/inbound/postmark': {
-      id: '/api/public/inbound/postmark'
-      path: '/api/public/inbound/postmark'
-      fullPath: '/api/public/inbound/postmark'
-      preLoaderRoute: typeof ApiPublicInboundPostmarkRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/auth/recover': {
-      id: '/api/public/auth/recover'
-      path: '/api/public/auth/recover'
-      fullPath: '/api/public/auth/recover'
-      preLoaderRoute: typeof ApiPublicAuthRecoverRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/_dash/datasets/pdf-reviews': {
-      id: '/_authenticated/_dash/datasets/pdf-reviews'
-      path: '/datasets/pdf-reviews'
-      fullPath: '/datasets/pdf-reviews'
-      preLoaderRoute: typeof AuthenticatedDashDatasetsPdfReviewsRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/datasets/new': {
-      id: '/_authenticated/_dash/datasets/new'
-      path: '/datasets/new'
-      fullPath: '/datasets/new'
-      preLoaderRoute: typeof AuthenticatedDashDatasetsNewRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/datasets/$datasetId': {
-      id: '/_authenticated/_dash/datasets/$datasetId'
-      path: '/datasets/$datasetId'
-      fullPath: '/datasets/$datasetId'
-      preLoaderRoute: typeof AuthenticatedDashDatasetsDatasetIdRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/admin/workspaces': {
-      id: '/_authenticated/_dash/admin/workspaces'
-      path: '/admin/workspaces'
-      fullPath: '/admin/workspaces'
-      preLoaderRoute: typeof AuthenticatedDashAdminWorkspacesRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/admin/usage': {
-      id: '/_authenticated/_dash/admin/usage'
-      path: '/admin/usage'
-      fullPath: '/admin/usage'
-      preLoaderRoute: typeof AuthenticatedDashAdminUsageRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/admin/team': {
-      id: '/_authenticated/_dash/admin/team'
-      path: '/admin/team'
-      fullPath: '/admin/team'
-      preLoaderRoute: typeof AuthenticatedDashAdminTeamRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/admin/storage': {
-      id: '/_authenticated/_dash/admin/storage'
-      path: '/admin/storage'
-      fullPath: '/admin/storage'
-      preLoaderRoute: typeof AuthenticatedDashAdminStorageRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/admin/security': {
-      id: '/_authenticated/_dash/admin/security'
-      path: '/admin/security'
-      fullPath: '/admin/security'
-      preLoaderRoute: typeof AuthenticatedDashAdminSecurityRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/admin/organization': {
-      id: '/_authenticated/_dash/admin/organization'
-      path: '/admin/organization'
-      fullPath: '/admin/organization'
-      preLoaderRoute: typeof AuthenticatedDashAdminOrganizationRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/admin/feedback': {
-      id: '/_authenticated/_dash/admin/feedback'
-      path: '/admin/feedback'
-      fullPath: '/admin/feedback'
-      preLoaderRoute: typeof AuthenticatedDashAdminFeedbackRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/admin/email-ingest': {
-      id: '/_authenticated/_dash/admin/email-ingest'
-      path: '/admin/email-ingest'
-      fullPath: '/admin/email-ingest'
-      preLoaderRoute: typeof AuthenticatedDashAdminEmailIngestRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/admin/connectors': {
-      id: '/_authenticated/_dash/admin/connectors'
-      path: '/admin/connectors'
-      fullPath: '/admin/connectors'
-      preLoaderRoute: typeof AuthenticatedDashAdminConnectorsRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/admin/authentication': {
-      id: '/_authenticated/_dash/admin/authentication'
-      path: '/admin/authentication'
-      fullPath: '/admin/authentication'
-      preLoaderRoute: typeof AuthenticatedDashAdminAuthenticationRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/admin/audit': {
-      id: '/_authenticated/_dash/admin/audit'
-      path: '/admin/audit'
-      fullPath: '/admin/audit'
-      preLoaderRoute: typeof AuthenticatedDashAdminAuditRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/admin/api-keys': {
-      id: '/_authenticated/_dash/admin/api-keys'
-      path: '/admin/api-keys'
-      fullPath: '/admin/api-keys'
-      preLoaderRoute: typeof AuthenticatedDashAdminApiKeysRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/admin/api-docs': {
-      id: '/_authenticated/_dash/admin/api-docs'
-      path: '/admin/api-docs'
-      fullPath: '/admin/api-docs'
-      preLoaderRoute: typeof AuthenticatedDashAdminApiDocsRouteImport
-      parentRoute: typeof AuthenticatedDashRoute
-    }
-    '/_authenticated/_dash/admin/alerts': {
-      id: '/_authenticated/_dash/admin/alerts'
-      path: '/admin/alerts'
-      fullPath: '/admin/alerts'
-      preLoaderRoute: typeof AuthenticatedDashAdminAlertsRouteImport
       parentRoute: typeof AuthenticatedDashRoute
     }
     '/_authenticated/_dash/admin/ai': {
@@ -1262,25 +1151,207 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashAdminAiRouteImport
       parentRoute: typeof AuthenticatedDashRoute
     }
-    '/api/v1/datasets/$datasetId/openapi.json': {
-      id: '/api/v1/datasets/$datasetId/openapi.json'
-      path: '/openapi.json'
-      fullPath: '/api/v1/datasets/$datasetId/openapi.json'
-      preLoaderRoute: typeof ApiV1DatasetsDatasetIdOpenapiDotjsonRouteImport
-      parentRoute: typeof ApiV1DatasetsDatasetIdRoute
+    '/_authenticated/_dash/admin/alerts': {
+      id: '/_authenticated/_dash/admin/alerts'
+      path: '/admin/alerts'
+      fullPath: '/admin/alerts'
+      preLoaderRoute: typeof AuthenticatedDashAdminAlertsRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
     }
-    '/api/v1/datasets/$datasetId/lineage.json': {
-      id: '/api/v1/datasets/$datasetId/lineage.json'
-      path: '/lineage.json'
-      fullPath: '/api/v1/datasets/$datasetId/lineage.json'
-      preLoaderRoute: typeof ApiV1DatasetsDatasetIdLineageDotjsonRouteImport
-      parentRoute: typeof ApiV1DatasetsDatasetIdRoute
+    '/_authenticated/_dash/admin/api-docs': {
+      id: '/_authenticated/_dash/admin/api-docs'
+      path: '/admin/api-docs'
+      fullPath: '/admin/api-docs'
+      preLoaderRoute: typeof AuthenticatedDashAdminApiDocsRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
     }
-    '/api/v1/datasets/$datasetId/contract.yaml': {
-      id: '/api/v1/datasets/$datasetId/contract.yaml'
-      path: '/contract.yaml'
-      fullPath: '/api/v1/datasets/$datasetId/contract.yaml'
-      preLoaderRoute: typeof ApiV1DatasetsDatasetIdContractDotyamlRouteImport
+    '/_authenticated/_dash/admin/api-keys': {
+      id: '/_authenticated/_dash/admin/api-keys'
+      path: '/admin/api-keys'
+      fullPath: '/admin/api-keys'
+      preLoaderRoute: typeof AuthenticatedDashAdminApiKeysRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/admin/audit': {
+      id: '/_authenticated/_dash/admin/audit'
+      path: '/admin/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AuthenticatedDashAdminAuditRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/admin/authentication': {
+      id: '/_authenticated/_dash/admin/authentication'
+      path: '/admin/authentication'
+      fullPath: '/admin/authentication'
+      preLoaderRoute: typeof AuthenticatedDashAdminAuthenticationRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/admin/connectors': {
+      id: '/_authenticated/_dash/admin/connectors'
+      path: '/admin/connectors'
+      fullPath: '/admin/connectors'
+      preLoaderRoute: typeof AuthenticatedDashAdminConnectorsRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/admin/email-ingest': {
+      id: '/_authenticated/_dash/admin/email-ingest'
+      path: '/admin/email-ingest'
+      fullPath: '/admin/email-ingest'
+      preLoaderRoute: typeof AuthenticatedDashAdminEmailIngestRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/admin/feedback': {
+      id: '/_authenticated/_dash/admin/feedback'
+      path: '/admin/feedback'
+      fullPath: '/admin/feedback'
+      preLoaderRoute: typeof AuthenticatedDashAdminFeedbackRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/admin/organization': {
+      id: '/_authenticated/_dash/admin/organization'
+      path: '/admin/organization'
+      fullPath: '/admin/organization'
+      preLoaderRoute: typeof AuthenticatedDashAdminOrganizationRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/admin/security': {
+      id: '/_authenticated/_dash/admin/security'
+      path: '/admin/security'
+      fullPath: '/admin/security'
+      preLoaderRoute: typeof AuthenticatedDashAdminSecurityRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/admin/storage': {
+      id: '/_authenticated/_dash/admin/storage'
+      path: '/admin/storage'
+      fullPath: '/admin/storage'
+      preLoaderRoute: typeof AuthenticatedDashAdminStorageRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/admin/team': {
+      id: '/_authenticated/_dash/admin/team'
+      path: '/admin/team'
+      fullPath: '/admin/team'
+      preLoaderRoute: typeof AuthenticatedDashAdminTeamRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/admin/usage': {
+      id: '/_authenticated/_dash/admin/usage'
+      path: '/admin/usage'
+      fullPath: '/admin/usage'
+      preLoaderRoute: typeof AuthenticatedDashAdminUsageRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/admin/workspaces': {
+      id: '/_authenticated/_dash/admin/workspaces'
+      path: '/admin/workspaces'
+      fullPath: '/admin/workspaces'
+      preLoaderRoute: typeof AuthenticatedDashAdminWorkspacesRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/datasets/': {
+      id: '/_authenticated/_dash/datasets/'
+      path: '/datasets'
+      fullPath: '/datasets/'
+      preLoaderRoute: typeof AuthenticatedDashDatasetsIndexRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/datasets/$datasetId': {
+      id: '/_authenticated/_dash/datasets/$datasetId'
+      path: '/datasets/$datasetId'
+      fullPath: '/datasets/$datasetId'
+      preLoaderRoute: typeof AuthenticatedDashDatasetsDatasetIdRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/datasets/new': {
+      id: '/_authenticated/_dash/datasets/new'
+      path: '/datasets/new'
+      fullPath: '/datasets/new'
+      preLoaderRoute: typeof AuthenticatedDashDatasetsNewRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/datasets/pdf-reviews': {
+      id: '/_authenticated/_dash/datasets/pdf-reviews'
+      path: '/datasets/pdf-reviews'
+      fullPath: '/datasets/pdf-reviews'
+      preLoaderRoute: typeof AuthenticatedDashDatasetsPdfReviewsRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/api/public/auth/recover': {
+      id: '/api/public/auth/recover'
+      path: '/api/public/auth/recover'
+      fullPath: '/api/public/auth/recover'
+      preLoaderRoute: typeof ApiPublicAuthRecoverRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/auth/resolve-login': {
+      id: '/api/public/auth/resolve-login'
+      path: '/api/public/auth/resolve-login'
+      fullPath: '/api/public/auth/resolve-login'
+      preLoaderRoute: typeof ApiPublicAuthResolveLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/auth/username-available': {
+      id: '/api/public/auth/username-available'
+      path: '/api/public/auth/username-available'
+      fullPath: '/api/public/auth/username-available'
+      preLoaderRoute: typeof ApiPublicAuthUsernameAvailableRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/inbound/postmark': {
+      id: '/api/public/inbound/postmark'
+      path: '/api/public/inbound/postmark'
+      fullPath: '/api/public/inbound/postmark'
+      preLoaderRoute: typeof ApiPublicInboundPostmarkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/inbound/webhook': {
+      id: '/api/public/inbound/webhook'
+      path: '/api/public/inbound/webhook'
+      fullPath: '/api/public/inbound/webhook'
+      preLoaderRoute: typeof ApiPublicInboundWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/portal/$orgSlug': {
+      id: '/api/public/portal/$orgSlug'
+      path: '/api/public/portal/$orgSlug'
+      fullPath: '/api/public/portal/$orgSlug'
+      preLoaderRoute: typeof ApiPublicPortalOrgSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/worker/connectors': {
+      id: '/api/public/worker/connectors'
+      path: '/api/public/worker/connectors'
+      fullPath: '/api/public/worker/connectors'
+      preLoaderRoute: typeof ApiPublicWorkerConnectorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/worker/ingest': {
+      id: '/api/public/worker/ingest'
+      path: '/api/public/worker/ingest'
+      fullPath: '/api/public/worker/ingest'
+      preLoaderRoute: typeof ApiPublicWorkerIngestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/worker/report': {
+      id: '/api/public/worker/report'
+      path: '/api/public/worker/report'
+      fullPath: '/api/public/worker/report'
+      preLoaderRoute: typeof ApiPublicWorkerReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/datasets/$datasetId': {
+      id: '/api/v1/datasets/$datasetId'
+      path: '/api/v1/datasets/$datasetId'
+      fullPath: '/api/v1/datasets/$datasetId'
+      preLoaderRoute: typeof ApiV1DatasetsDatasetIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/datasets/$datasetId/$sheet': {
+      id: '/api/v1/datasets/$datasetId/$sheet'
+      path: '/$sheet'
+      fullPath: '/api/v1/datasets/$datasetId/$sheet'
+      preLoaderRoute: typeof ApiV1DatasetsDatasetIdSheetRouteImport
       parentRoute: typeof ApiV1DatasetsDatasetIdRoute
     }
     '/api/v1/datasets/$datasetId/contract.json': {
@@ -1290,25 +1361,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1DatasetsDatasetIdContractDotjsonRouteImport
       parentRoute: typeof ApiV1DatasetsDatasetIdRoute
     }
-    '/api/v1/datasets/$datasetId/$sheet': {
-      id: '/api/v1/datasets/$datasetId/$sheet'
-      path: '/$sheet'
-      fullPath: '/api/v1/datasets/$datasetId/$sheet'
-      preLoaderRoute: typeof ApiV1DatasetsDatasetIdSheetRouteImport
+    '/api/v1/datasets/$datasetId/contract.yaml': {
+      id: '/api/v1/datasets/$datasetId/contract.yaml'
+      path: '/contract.yaml'
+      fullPath: '/api/v1/datasets/$datasetId/contract.yaml'
+      preLoaderRoute: typeof ApiV1DatasetsDatasetIdContractDotyamlRouteImport
       parentRoute: typeof ApiV1DatasetsDatasetIdRoute
     }
-    '/api/v1/datasets/$datasetId/$sheet/schema': {
-      id: '/api/v1/datasets/$datasetId/$sheet/schema'
-      path: '/schema'
-      fullPath: '/api/v1/datasets/$datasetId/$sheet/schema'
-      preLoaderRoute: typeof ApiV1DatasetsDatasetIdSheetSchemaRouteImport
-      parentRoute: typeof ApiV1DatasetsDatasetIdSheetRoute
+    '/api/v1/datasets/$datasetId/lineage.json': {
+      id: '/api/v1/datasets/$datasetId/lineage.json'
+      path: '/lineage.json'
+      fullPath: '/api/v1/datasets/$datasetId/lineage.json'
+      preLoaderRoute: typeof ApiV1DatasetsDatasetIdLineageDotjsonRouteImport
+      parentRoute: typeof ApiV1DatasetsDatasetIdRoute
+    }
+    '/api/v1/datasets/$datasetId/openapi.json': {
+      id: '/api/v1/datasets/$datasetId/openapi.json'
+      path: '/openapi.json'
+      fullPath: '/api/v1/datasets/$datasetId/openapi.json'
+      preLoaderRoute: typeof ApiV1DatasetsDatasetIdOpenapiDotjsonRouteImport
+      parentRoute: typeof ApiV1DatasetsDatasetIdRoute
     }
     '/api/v1/datasets/$datasetId/$sheet/export': {
       id: '/api/v1/datasets/$datasetId/$sheet/export'
       path: '/export'
       fullPath: '/api/v1/datasets/$datasetId/$sheet/export'
       preLoaderRoute: typeof ApiV1DatasetsDatasetIdSheetExportRouteImport
+      parentRoute: typeof ApiV1DatasetsDatasetIdSheetRoute
+    }
+    '/api/v1/datasets/$datasetId/$sheet/schema': {
+      id: '/api/v1/datasets/$datasetId/$sheet/schema'
+      path: '/schema'
+      fullPath: '/api/v1/datasets/$datasetId/$sheet/schema'
+      preLoaderRoute: typeof ApiV1DatasetsDatasetIdSheetSchemaRouteImport
       parentRoute: typeof ApiV1DatasetsDatasetIdSheetRoute
     }
     '/api/v1/datasets/$datasetId/versions/$versionNo/contract.json': {
@@ -1330,6 +1415,7 @@ interface AuthenticatedDashRouteChildren {
   AuthenticatedDashConnectorsRoute: typeof AuthenticatedDashConnectorsRoute
   AuthenticatedDashDashboardRoute: typeof AuthenticatedDashDashboardRoute
   AuthenticatedDashHelpRoute: typeof AuthenticatedDashHelpRoute
+  AuthenticatedDashLogsRoute: typeof AuthenticatedDashLogsRoute
   AuthenticatedDashMembersRoute: typeof AuthenticatedDashMembersRoute
   AuthenticatedDashNotificationsRoute: typeof AuthenticatedDashNotificationsRoute
   AuthenticatedDashSettingsRoute: typeof AuthenticatedDashSettingsRoute
@@ -1366,6 +1452,7 @@ const AuthenticatedDashRouteChildren: AuthenticatedDashRouteChildren = {
   AuthenticatedDashConnectorsRoute: AuthenticatedDashConnectorsRoute,
   AuthenticatedDashDashboardRoute: AuthenticatedDashDashboardRoute,
   AuthenticatedDashHelpRoute: AuthenticatedDashHelpRoute,
+  AuthenticatedDashLogsRoute: AuthenticatedDashLogsRoute,
   AuthenticatedDashMembersRoute: AuthenticatedDashMembersRoute,
   AuthenticatedDashNotificationsRoute: AuthenticatedDashNotificationsRoute,
   AuthenticatedDashSettingsRoute: AuthenticatedDashSettingsRoute,
@@ -1473,12 +1560,15 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   DocsDatasetIdRoute: DocsDatasetIdRoute,
   InviteTokenRoute: InviteTokenRoute,
+  JoinRefRoute: JoinRefRoute,
   PortalOrgSlugRoute: PortalOrgSlugRoute,
   ApiPublicConfigRoute: ApiPublicConfigRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicMetricsRoute: ApiPublicMetricsRoute,
   ApiPublicReadyRoute: ApiPublicReadyRoute,
   ApiPublicAuthRecoverRoute: ApiPublicAuthRecoverRoute,
+  ApiPublicAuthResolveLoginRoute: ApiPublicAuthResolveLoginRoute,
+  ApiPublicAuthUsernameAvailableRoute: ApiPublicAuthUsernameAvailableRoute,
   ApiPublicInboundPostmarkRoute: ApiPublicInboundPostmarkRoute,
   ApiPublicInboundWebhookRoute: ApiPublicInboundWebhookRoute,
   ApiPublicPortalOrgSlugRoute: ApiPublicPortalOrgSlugRoute,
@@ -1490,13 +1580,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

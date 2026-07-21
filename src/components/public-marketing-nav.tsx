@@ -30,8 +30,15 @@ export function PublicMarketingNav() {
             Deploy
           </a>
         </Button>
+        <Button variant="outline" size="sm" className="shadow-sm" asChild>
+          <Link to="/auth" search={{ mode: "signin" }}>
+            Sign in
+          </Link>
+        </Button>
         <Button size="sm" className="shadow-sm" asChild>
-          <Link to="/auth">Demo sign-in</Link>
+          <Link to="/auth" search={{ mode: "signup" }}>
+            Sign up
+          </Link>
         </Button>
       </div>
 
@@ -63,8 +70,15 @@ export function PublicMarketingNav() {
                 Deploy
               </a>
             </Button>
+            <Button variant="outline" className="justify-start" asChild>
+              <Link to="/auth" search={{ mode: "signin" }}>
+                Sign in
+              </Link>
+            </Button>
             <Button className="mt-2" asChild>
-              <Link to="/auth">Demo sign-in</Link>
+              <Link to="/auth" search={{ mode: "signup" }}>
+                Sign up
+              </Link>
             </Button>
           </nav>
         </SheetContent>

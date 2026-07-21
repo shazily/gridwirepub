@@ -44,7 +44,7 @@ function safeSecretEqual(provided: string, expected: string): boolean {
   return timingSafeEqual(a, b);
 }
 
-/** Gridwire shared secret via header or Bearer (required in production). */
+/** Gridwire shared secret via header, Bearer, or HTTP Basic (Postmark inbound URL auth). */
 export function verifyInboundWebhookSharedSecret(request: Request): boolean {
   const secret = inboundWebhookSecret();
   if (!secret) {
@@ -58,11 +58,31 @@ export function verifyInboundWebhookSharedSecret(request: Request): boolean {
   const auth = request.headers.get("authorization");
   const bearer = auth?.startsWith("Bearer ") ? auth.slice(7).trim() : "";
 
-  return safeSecretEqual(headerSecret, secret) || safeSecretEqual(bearer, secret);
+  if (safeSecretEqual(headerSecret, secret) || safeSecretEqual(bearer, secret)) {
+    return true;
+  }
+
+  // Postmark inbound recommends https://user:password@host/path — password (or user) = secret.
+  if (auth?.startsWith("Basic ")) {
+    try {
+      const decoded = Buffer.from(auth.slice(6).trim(), "base64").toString("utf8");
+      const colon = decoded.indexOf(":");
+      const user = colon >= 0 ? decoded.slice(0, colon) : decoded;
+      const pass = colon >= 0 ? decoded.slice(colon + 1) : "";
+      if (safeSecretEqual(pass, secret) || safeSecretEqual(user, secret)) {
+        return true;
+      }
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
 }
 
 /**
- * Postmark delivery/inbound webhook signature — Base64(HMAC-SHA256(rawBody, secret)).
+ * Optional Postmark HMAC when the provider sends X-Postmark-Signature.
+ * Postmark inbound does not currently sign payloads — use HTTP Basic in the hook URL instead.
  * @see https://postmarkapp.com/developer/webhooks/webhooks-overview
  */
 export function verifyPostmarkWebhookSignature(rawBody: string, signatureHeader: string | null): boolean {
@@ -74,7 +94,10 @@ export function verifyPostmarkWebhookSignature(rawBody: string, signatureHeader:
 }
 
 export type InboundWebhookAuthOptions = {
-  /** When true (Postmark route), production requires a valid X-Postmark-Signature. */
+  /**
+   * When true, if X-Postmark-Signature is present it must validate.
+   * Missing signature is allowed (Postmark inbound uses Basic Auth, not HMAC).
+   */
   requirePostmarkSignature?: boolean;
 };
 
@@ -102,25 +125,19 @@ export function verifyInboundWebhookAuth(
 
   const postmarkSig = request.headers.get("x-postmark-signature");
 
-  if (opts?.requirePostmarkSignature) {
-    const secret = postmarkWebhookSecret();
-    if (isProductionDeployment() || secret) {
-      if (!verifyPostmarkWebhookSignature(rawBody, postmarkSig)) {
-        return {
-          ok: false,
-          status: 401,
-          error: "invalid_postmark_signature",
-          code: "postmark_signature_invalid",
-        };
-      }
+  // Only enforce HMAC when the provider actually sent a signature header.
+  if (postmarkSig) {
+    if (!verifyPostmarkWebhookSignature(rawBody, postmarkSig)) {
+      return {
+        ok: false,
+        status: 401,
+        error: "invalid_postmark_signature",
+        code: "postmark_signature_invalid",
+      };
     }
-  } else if (postmarkSig && !verifyPostmarkWebhookSignature(rawBody, postmarkSig)) {
-    return {
-      ok: false,
-      status: 401,
-      error: "invalid_postmark_signature",
-      code: "postmark_signature_invalid",
-    };
+  } else if (opts?.requirePostmarkSignature && isProductionDeployment()) {
+    // Prefer Basic Auth / shared secret for inbound; do not fail closed on missing HMAC
+    // because Postmark inbound does not sign requests today.
   }
 
   return { ok: true };

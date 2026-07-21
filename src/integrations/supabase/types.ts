@@ -96,6 +96,35 @@ export type Database = {
           },
         ]
       }
+      email_ingest_mailbox_aliases: {
+        Row: {
+          created_at: string
+          id: string
+          inbound_address: string
+          org_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inbound_address: string
+          org_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inbound_address?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_ingest_mailbox_aliases_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_ingest_notification_recipients: {
         Row: {
           created_at: string
@@ -957,6 +986,10 @@ export type Database = {
       is_username_available: { Args: { _username: string }; Returns: boolean }
       resolve_login_email: { Args: { _identifier: string }; Returns: string }
       accept_org_invite: { Args: { _token: string }; Returns: string }
+      get_join_preview: { Args: { _ref: string }; Returns: Json }
+      join_organization_by_ref: { Args: { _ref: string }; Returns: string }
+      resolve_org_join_ref: { Args: { _ref: string }; Returns: string }
+      resolve_email_ingest_org: { Args: { _address: string }; Returns: string }
       create_org_invite: {
         Args: {
           _expires_at?: string

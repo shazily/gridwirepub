@@ -163,13 +163,23 @@ export async function importEmailIngestMessage(opts: {
       rowCount: sheets[0]?.rows.length ?? 0,
     };
   } catch (err) {
-    const message = formatImportError(err);
+    let message = formatImportError(err);
+    if (message.includes("Data contract violation") && opts.template.target_dataset_id) {
+      message =
+        `${message} — Template "${opts.template.name}" imports into dataset "${datasetName}", ` +
+        `but that dataset’s published contract does not match this file’s columns. ` +
+        `Edit the template and choose “Create new dataset” or pick a dataset with matching columns.`;
+    }
     await logSystemAuditEvent({
       orgId: opts.orgId,
       action: "email_ingest.import_failed",
       resourceType: "email_ingest_message",
       resourceId: opts.messageId,
-      metadata: { error: message, template_id: opts.template.id },
+      metadata: {
+        error: message,
+        template_id: opts.template.id,
+        target_dataset_id: opts.template.target_dataset_id,
+      },
     });
     return { ok: false, error: message };
   }

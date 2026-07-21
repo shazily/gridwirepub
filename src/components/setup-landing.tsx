@@ -36,8 +36,8 @@ const setupSteps = [
   },
   {
     icon: Building2,
-    title: "Create your organization",
-    desc: "Sign in, then name your team workspace. Each organization is isolated with its own datasets and API keys.",
+    title: "Sign in and join (or create)",
+    desc: "Create an account, then join with your organization UUID or a join link — or create the first workspace if you are the instance admin.",
   },
   {
     icon: Upload,

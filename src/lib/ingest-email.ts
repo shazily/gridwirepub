@@ -4,14 +4,20 @@ export function ingestEmailDomain(): string {
   return (import.meta.env.VITE_INGEST_EMAIL_DOMAIN as string | undefined)?.trim() || "ingest.local";
 }
 
+/** True when the domain is a local placeholder — not routable on the public internet. */
+export function isPlaceholderIngestDomain(domain: string): boolean {
+  const d = domain.trim().toLowerCase();
+  return !d || d === "ingest.local" || d.endsWith(".local");
+}
+
 /** Suggested address for a workspace before admin customizes it. */
-export function suggestIngestAddress(orgSlug: string, orgId: string): string {
+export function suggestIngestAddress(orgSlug: string, orgId: string, domain?: string): string {
   const local = (orgSlug || `ingest-${orgId.slice(0, 8)}`)
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
-  return `${local}@${ingestEmailDomain()}`;
+  return `${local}@${(domain?.trim() || ingestEmailDomain()).toLowerCase()}`;
 }
 
 export function isValidIngestEmail(value: string): boolean {

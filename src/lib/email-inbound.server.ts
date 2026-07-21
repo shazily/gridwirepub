@@ -97,6 +97,8 @@ export async function processInboundPostmarkEmail(args: {
   subject: string;
   externalId?: string;
   mailboxHash?: string;
+  originalRecipient?: string;
+  toAddress?: string;
   orgId?: string;
   attachments: InboundAttachment[];
   testMode?: boolean;
@@ -104,13 +106,54 @@ export async function processInboundPostmarkEmail(args: {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   let orgId: string | null = args.orgId ?? null;
-  if (!orgId && args.mailboxHash) {
-    const { data: mb } = await supabaseAdmin
+
+  /** Candidates: full recipient addresses first, then mailbox hash (may be local-part only). */
+  const routeCandidates = [
+    args.originalRecipient,
+    args.toAddress,
+    args.mailboxHash,
+    args.mailboxHash && !args.mailboxHash.includes("@")
+      ? null // local-part alone — try against known addresses via SQL below
+      : null,
+  ]
+    .filter((v): v is string => !!v && v.trim().length > 0)
+    .map((v) => v.trim().toLowerCase());
+
+  if (!orgId) {
+    for (const candidate of routeCandidates) {
+      const { data: resolved } = await supabaseAdmin.rpc("resolve_email_ingest_org", {
+        _address: candidate,
+      });
+      if (typeof resolved === "string" && resolved) {
+        orgId = resolved;
+        break;
+      }
+    }
+  }
+
+  // If gateway sent only a local-part hash, match against primary/alias local parts.
+  if (!orgId && args.mailboxHash && !args.mailboxHash.includes("@")) {
+    const local = args.mailboxHash.trim().toLowerCase();
+    const { data: primaries } = await supabaseAdmin
       .from("email_ingest_mailboxes")
-      .select("org_id, enabled")
-      .eq("inbound_address", args.mailboxHash)
-      .maybeSingle();
-    if (mb?.enabled) orgId = mb.org_id;
+      .select("org_id, inbound_address, enabled")
+      .eq("enabled", true);
+    const hit = (primaries ?? []).find((m) => m.inbound_address.split("@")[0]?.toLowerCase() === local);
+    if (hit) orgId = hit.org_id;
+    if (!orgId) {
+      const { data: aliases } = await supabaseAdmin
+        .from("email_ingest_mailbox_aliases")
+        .select("org_id, inbound_address");
+      const aliasHit = (aliases ?? []).find((a) => a.inbound_address.split("@")[0]?.toLowerCase() === local);
+      if (aliasHit) {
+        const { data: mb } = await supabaseAdmin
+          .from("email_ingest_mailboxes")
+          .select("enabled")
+          .eq("org_id", aliasHit.org_id)
+          .maybeSingle();
+        if (mb?.enabled) orgId = aliasHit.org_id;
+      }
+    }
   }
 
   if (!orgId) {
@@ -138,6 +181,7 @@ export async function processInboundPostmarkEmail(args: {
   if (!orgId) {
     return rejectMessage(msgRow.id, null, "rejected_no_mailbox", "No matching enabled mailbox", "email_ingest.rejected", {
       from: args.from,
+      route_candidates: routeCandidates,
     });
   }
 
@@ -146,7 +190,14 @@ export async function processInboundPostmarkEmail(args: {
     action: "email_ingest.received",
     resourceType: "email_ingest_message",
     resourceId: msgRow.id,
-    metadata: { from: args.from, subject: args.subject, test_mode: args.testMode ?? false },
+    metadata: {
+      from: args.from,
+      subject: args.subject,
+      test_mode: args.testMode ?? false,
+      original_recipient: args.originalRecipient ?? null,
+      to_address: args.toAddress ?? null,
+      mailbox_hash: args.mailboxHash ?? null,
+    },
   });
 
   const { data: senders } = await supabaseAdmin

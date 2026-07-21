@@ -251,9 +251,9 @@ function DatasetDetail() {
       qc.invalidateQueries({ queryKey: ["datasets"] });
       setArchiveOpen(false);
       setLifecycleReason("");
-      toast.success("Dataset archived — API is offline. Event logged to Admin → Audit.");
+      toast.success("API unpublished — data kept. Event logged to Admin → Audit.");
     },
-    onError: (e) => toast.error(toUserFacingMessage(e, "Failed to archive dataset")),
+    onError: (e) => toast.error(toUserFacingMessage(e, "Failed to unpublish API")),
   });
 
   const restoreMut = useMutation({
@@ -269,11 +269,11 @@ function DatasetDetail() {
       setLifecycleReason("");
       toast.success(
         res.status === "published"
-          ? "Dataset restored — API is live again. Event logged to Admin → Audit."
+          ? "API restored — live again. Event logged to Admin → Audit."
           : "Dataset restored as draft. Event logged to Admin → Audit.",
       );
     },
-    onError: (e) => toast.error(toUserFacingMessage(e, "Failed to restore dataset")),
+    onError: (e) => toast.error(toUserFacingMessage(e, "Failed to restore API")),
   });
 
   const deleteMut = useMutation({
@@ -346,7 +346,7 @@ function DatasetDetail() {
               : "capitalize"
           }
         >
-          {ds.data.status}
+          {isArchived ? "unpublished" : ds.data.status}
         </Badge>
         <Badge variant={isPublic ? "outline" : "default"} className="gap-1">
           {isPublic ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
@@ -382,9 +382,10 @@ function DatasetDetail() {
           <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm">
             <Archive className="h-4 w-4 text-warning" />
             <div className="flex-1">
-              <p className="font-medium">This dataset is archived</p>
+              <p className="font-medium">This API is unpublished</p>
               <p className="text-muted-foreground">
-                The live API returns not published. Restore to bring it back, or permanently delete it.
+                The live endpoint is offline. All data and versions are kept. Restore to bring the API
+                back, or permanently delete below if you truly need to remove it.
               </p>
             </div>
             {editable && (
@@ -431,40 +432,149 @@ function DatasetDetail() {
           {manage && <TabsTrigger value="access">Recent access</TabsTrigger>}
         </TabsList>
 
-        {/* Sheet selector */}
-        {sheetNames.length > 0 && (
-          <div className="mt-4">
+        {/* Sheet selector — only when workbook has multiple sheets */}
+        {sheetNames.length > 1 && (
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Label className="text-xs text-muted-foreground">Sheet</Label>
             <Select value={sheet} onValueChange={setActiveSheet}>
-              <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-56">
+                <SelectValue placeholder="Select sheet" />
+              </SelectTrigger>
               <SelectContent>
-                {sheetNames.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                {sheetNames.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
         )}
 
         <TabsContent value="api" className="mt-4 space-y-4">
-          {editable && (
+          {editable && !isArchived && (
             <Card>
-              <CardHeader><CardTitle className="text-base">Access control</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-base">API availability</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-sm">
+                    <div className="font-medium">{isPublic ? "Public" : "Secure (API key required)"}</div>
+                    <p className="text-xs text-muted-foreground">
+                      {isPublic
+                        ? "Anyone with the URL can read this data. Use only for non-sensitive open data."
+                        : "Consumers must send a valid API key as a Bearer token."}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Lock className="h-4 w-4 text-muted-foreground" />
+                    <Switch
+                      checked={isPublic}
+                      onCheckedChange={(v) => accessMut.mutate(v ? "public" : "secure")}
+                      disabled={accessMut.isPending}
+                    />
+                    <Globe className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+                  <div className="text-sm">
+                    <div className="font-medium">Unpublish API</div>
+                    <p className="text-xs text-muted-foreground">
+                      Takes the live API offline. Rows, versions, and field settings stay — nothing is
+                      deleted. You can restore later.
+                    </p>
+                  </div>
+                  <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Archive className="h-4 w-4" /> Unpublish
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Unpublish “{ds.data.name}”?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          The API will stop serving immediately (clients get not published). All data and
+                          versions remain in the portal. You can restore anytime. This is recorded in
+                          Admin → Audit.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <div className="space-y-1.5 py-1">
+                        <Label htmlFor="unpublish-reason">Reason (optional)</Label>
+                        <Textarea
+                          id="unpublish-reason"
+                          value={lifecycleReason}
+                          onChange={(e) => setLifecycleReason(e.target.value)}
+                          placeholder="e.g. Temporary hold · wrong access · superseded"
+                          className="min-h-[72px]"
+                        />
+                      </div>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={(e) => {
+                            e.preventDefault();
+                            archiveMut.mutate();
+                          }}
+                          disabled={archiveMut.isPending}
+                        >
+                          {archiveMut.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            "Unpublish (keep data)"
+                          )}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {editable && isArchived && (
+            <Card className="border-warning/40">
+              <CardHeader>
+                <CardTitle className="text-base">API availability</CardTitle>
+              </CardHeader>
               <CardContent className="flex flex-wrap items-center justify-between gap-3">
                 <div className="text-sm">
-                  <div className="font-medium">{isPublic ? "Public" : "Secure (API key required)"}</div>
+                  <div className="font-medium">API is unpublished</div>
                   <p className="text-xs text-muted-foreground">
-                    {isPublic
-                      ? "Anyone with the URL can read this data. Use only for non-sensitive open data."
-                      : "Consumers must send a valid API key as a Bearer token."}
+                    Data is retained. Restore to make the API live again with the same public/secure
+                    setting.
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Lock className="h-4 w-4 text-muted-foreground" />
-                  <Switch
-                    checked={isPublic}
-                    onCheckedChange={(v) => accessMut.mutate(v ? "public" : "secure")}
-                    disabled={accessMut.isPending}
-                  />
-                  <Globe className="h-4 w-4 text-muted-foreground" />
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={restoreMut.isPending}
+                  onClick={() => restoreMut.mutate()}
+                >
+                  {restoreMut.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ArchiveRestore className="h-4 w-4" />
+                  )}
+                  Restore API
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {!editable && !isArchived && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Access</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm">
+                <div className="font-medium">{isPublic ? "Public" : "Secure (API key required)"}</div>
+                <p className="text-xs text-muted-foreground">
+                  {isPublic
+                    ? "Anyone with the URL can read this data."
+                    : "Consumers must send a valid API key as a Bearer token."}
+                </p>
               </CardContent>
             </Card>
           )}
@@ -689,7 +799,7 @@ function DatasetDetail() {
               <CardContent className="space-y-2">
                 <p className="text-xs text-muted-foreground">
                   Latest reads and failed authentication attempts against this dataset's API. Full history lives in the{" "}
-                  <Link to="/audit" className="underline">audit log</Link>.
+                  <Link to="/logs" search={{ tab: "audit" }} className="underline">audit log</Link>.
                 </p>
                 {access.isLoading ? (
                   <p className="text-sm text-muted-foreground">Loading…</p>
@@ -747,53 +857,23 @@ function DatasetDetail() {
             <CardTitle className="text-base text-destructive">Danger zone</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              To take the API offline without losing data, use{" "}
+              <span className="font-medium text-foreground">Unpublish</span> under API availability
+              above. Permanent delete cannot be undone.
+            </p>
             <div className="space-y-1.5">
               <Label htmlFor="lifecycle-reason">Reason (optional, written to audit log)</Label>
               <Textarea
                 id="lifecycle-reason"
                 value={lifecycleReason}
                 onChange={(e) => setLifecycleReason(e.target.value)}
-                placeholder="e.g. Superseded by Q2 statement · duplicate · compliance purge"
+                placeholder="e.g. compliance purge · duplicate"
                 className="min-h-[72px]"
               />
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              {editable && !isArchived && (
-                <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline">
-                      <Archive className="h-4 w-4" /> Archive dataset
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Archive “{ds.data.name}”?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        The public API will stop serving this dataset immediately. Data and versions are kept —
-                        you can restore later. This action is recorded in Admin → Audit.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={(e) => {
-                          e.preventDefault();
-                          archiveMut.mutate();
-                        }}
-                        disabled={archiveMut.isPending}
-                      >
-                        {archiveMut.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          "Archive"
-                        )}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-
               {editable && isArchived && (
                 <Button
                   variant="outline"
@@ -805,7 +885,7 @@ function DatasetDetail() {
                   ) : (
                     <ArchiveRestore className="h-4 w-4" />
                   )}
-                  Restore dataset
+                  Restore API
                 </Button>
               )}
 
@@ -868,7 +948,8 @@ function DatasetDetail() {
 
             {!manage && (
               <p className="text-xs text-muted-foreground">
-                Permanent deletion requires owner or admin. You can still archive if you have edit access.
+                Permanent deletion requires owner or admin. Unpublish (keep data) is available above for
+                anyone with edit access.
               </p>
             )}
           </CardContent>

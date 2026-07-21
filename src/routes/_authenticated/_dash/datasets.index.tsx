@@ -26,7 +26,7 @@ function DatasetsList() {
     queryFn: async () => {
       let q = supabase
         .from("datasets")
-        .select("id, name, description, status, source_type, updated_at, dataset_versions(row_count, sheet_count, version_no)")
+        .select("id, name, description, status, source_type, updated_at, api_access, dataset_versions(row_count, sheet_count, version_no)")
         .eq("org_id", orgId!)
         .order("updated_at", { ascending: false });
       if (statusFilter) q = q.eq("status", statusFilter);
@@ -81,20 +81,27 @@ function DatasetsList() {
               <Link key={d.id} to="/datasets/$datasetId" params={{ datasetId: d.id }}>
                 <Card className="h-full transition-colors hover:border-primary/50">
                   <CardContent className="p-5">
-                    <div className="mb-3 flex items-center justify-between">
+                    <div className="mb-3 flex items-center justify-between gap-2">
                       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15">
                         <Database className="h-4 w-4 text-primary" />
                       </div>
-                      <Badge
-                        variant={d.status === "published" ? "default" : "secondary"}
-                        className={
-                          d.status === "archived"
-                            ? "border-warning/40 bg-warning/10 capitalize text-warning"
-                            : "capitalize"
-                        }
-                      >
-                        {d.status}
-                      </Badge>
+                      <div className="flex flex-wrap items-center justify-end gap-1.5">
+                        {d.status === "published" ? (
+                          <Badge variant="outline" className="capitalize">
+                            {d.api_access === "public" ? "public" : "secure"}
+                          </Badge>
+                        ) : null}
+                        <Badge
+                          variant={d.status === "published" ? "default" : "secondary"}
+                          className={
+                            d.status === "archived"
+                              ? "border-warning/40 bg-warning/10 capitalize text-warning"
+                              : "capitalize"
+                          }
+                        >
+                          {d.status}
+                        </Badge>
+                      </div>
                     </div>
                     <div className="font-medium">{d.name}</div>
                     {d.description && (

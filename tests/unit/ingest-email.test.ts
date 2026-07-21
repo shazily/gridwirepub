@@ -7,15 +7,21 @@ import {
 
 describe("ingest-email helpers", () => {
   it("suggests slug-based address", () => {
-    expect(suggestIngestAddress("Finance Team", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")).toBe(
-      "finance-team@ingest.local",
-    );
+    expect(
+      suggestIngestAddress("Finance Team", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "ingest.local"),
+    ).toBe("finance-team@ingest.local");
   });
 
   it("falls back to org id prefix when slug empty", () => {
-    expect(suggestIngestAddress("", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")).toBe(
-      "ingest-aaaaaaaa@ingest.local",
-    );
+    expect(
+      suggestIngestAddress("", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "ingest.local"),
+    ).toBe("ingest-aaaaaaaa@ingest.local");
+  });
+
+  it("uses provided domain when env default differs", () => {
+    expect(
+      suggestIngestAddress("ops", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "inbound.postmarkapp.com"),
+    ).toBe("ops@inbound.postmarkapp.com");
   });
 
   it("validates email format", () => {
