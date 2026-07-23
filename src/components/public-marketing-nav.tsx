@@ -12,6 +12,7 @@ import { GRIDWIRE_GITHUB_REPO_URL } from "@/lib/github";
 
 const NAV_LINKS = [
   { to: "/features" as const, label: "Features" },
+  { to: "/product-guide" as const, label: "Product guide" },
   { to: "/feedback" as const, label: "Feedback" },
 ] as const;
 
@@ -33,11 +34,6 @@ export function PublicMarketingNav() {
         <Button variant="outline" size="sm" className="shadow-sm" asChild>
           <Link to="/auth" search={{ mode: "signin" }}>
             Sign in
-          </Link>
-        </Button>
-        <Button size="sm" className="shadow-sm" asChild>
-          <Link to="/auth" search={{ mode: "signup" }}>
-            Sign up
           </Link>
         </Button>
       </div>
@@ -73,11 +69,6 @@ export function PublicMarketingNav() {
             <Button variant="outline" className="justify-start" asChild>
               <Link to="/auth" search={{ mode: "signin" }}>
                 Sign in
-              </Link>
-            </Button>
-            <Button className="mt-2" asChild>
-              <Link to="/auth" search={{ mode: "signup" }}>
-                Sign up
               </Link>
             </Button>
           </nav>

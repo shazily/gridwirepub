@@ -100,6 +100,9 @@ export function SetupLandingPage() {
                 Get started <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
+            <Button size="lg" variant="outline" className="mt-8 ml-0 sm:ml-3" asChild>
+              <Link to="/product-guide">Product &amp; security guide</Link>
+            </Button>
           </div>
         </section>
 

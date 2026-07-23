@@ -312,7 +312,7 @@ export const getEmailIngestSetup = createServerFn({ method: "POST" })
         "Set a real ingest address (your domain), not @ingest.local — Gridwire does not receive SMTP mail itself.",
         "Configure an inbound mail gateway (Postmark Inbound, Mailgun routes, Microsoft Graph, etc.) that receives email for that address.",
         "Point the gateway webhook at the public HTTPS URL below — never 127.0.0.1 (external providers cannot reach your LAN).",
-        "Set PUBLIC_APP_URL (and Authentication → Public app URL) to your public portal origin, e.g. https://gridwire.gptlab.ae.",
+        "Set PUBLIC_APP_URL (and Authentication → Public app URL) to your public portal origin, e.g. https://portal.example.com.",
         "Set INBOUND_WEBHOOK_SECRET and send it on every POST. Set INGEST_EMAIL_DOMAIN to your real mail domain for address suggestions.",
       ],
       mailForwardSteps: [

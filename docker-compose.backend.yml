@@ -56,6 +56,8 @@ services:
       GOTRUE_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
       GOTRUE_JWT_EXP: 3600
       GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      # Recovery / magic-link OTP lifetime (seconds). Keep short for security.
+      GOTRUE_MAILER_OTP_EXP: ${GOTRUE_MAILER_OTP_EXP:-300}
     networks:
       - gridwire-backend
 

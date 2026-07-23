@@ -19,10 +19,45 @@ export const Route = createFileRoute("/reset-password")({
   component: ResetPasswordPage,
 });
 
+/** One-shot guard so React Strict Mode (or a double mount) cannot burn a recovery OTP twice. */
+function claimRecoveryToken(tokenHash: string): boolean {
+  try {
+    const key = `gridwire:recovery-otp:${tokenHash}`;
+    if (sessionStorage.getItem(key) === "1") return false;
+    sessionStorage.setItem(key, "1");
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+function waitForSession(ms = 1500): Promise<boolean> {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (ok: boolean) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      sub.subscription.unsubscribe();
+      resolve(ok);
+    };
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) finish(true);
+    });
+    const timer = setTimeout(() => {
+      void supabase.auth.getSession().then(({ data }) => finish(!!data.session));
+    }, ms);
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session) finish(true);
+    });
+  });
+}
+
 function ResetPasswordPage() {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
   const [validSession, setValidSession] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,41 +65,70 @@ function ResetPasswordPage() {
   useEffect(() => {
     let cancelled = false;
 
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) setValidSession(true);
+      if (event === "PASSWORD_RECOVERY") setValidSession(true);
+    });
+
     async function establishRecoverySession() {
       const params = new URLSearchParams(window.location.search);
       const tokenHash = params.get("token_hash");
       const type = params.get("type");
+      let localError: string | null = null;
+
+      const existing = await supabase.auth.getSession();
+      if (existing.data.session) {
+        if (!cancelled) {
+          setValidSession(true);
+          setReady(true);
+          if (tokenHash) window.history.replaceState({}, "", "/reset-password");
+        }
+        return;
+      }
 
       if (tokenHash && (type === "recovery" || !type)) {
-        const { error } = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
-          type: "recovery",
-        });
-        if (!cancelled && !error) {
-          setValidSession(true);
-          // Drop secrets from the address bar after verify.
+        if (claimRecoveryToken(tokenHash)) {
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: "recovery",
+          });
+          if (error) {
+            const again = await supabase.auth.getSession();
+            if (!again.data.session) {
+              localError = error.message || "This reset link is invalid or has expired.";
+            }
+          }
+        } else {
+          // Sibling mount is verifying — wait for its session instead of verifying again.
+          await waitForSession(2000);
+        }
+
+        if (!cancelled) {
           window.history.replaceState({}, "", "/reset-password");
         }
       }
 
-      const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-        if (session) setValidSession(true);
-        if (event === "PASSWORD_RECOVERY") setValidSession(true);
-      });
-
       const { data } = await supabase.auth.getSession();
       if (!cancelled) {
-        if (data.session) setValidSession(true);
+        const ok = !!data.session;
+        setValidSession(ok);
+        if (!ok) {
+          setStatusMessage(
+            localError ??
+              (tokenHash
+                ? "This reset link is invalid or has expired."
+                : "Open the reset link from your email to continue."),
+          );
+        }
         setReady(true);
       }
-
-      return () => sub.subscription.unsubscribe();
     }
 
-    const cleanupPromise = establishRecoverySession();
+    void establishRecoverySession();
+
     return () => {
       cancelled = true;
-      void cleanupPromise.then((cleanup) => cleanup?.());
+      sub.subscription.unsubscribe();
     };
   }, []);
 
@@ -72,6 +136,10 @@ function ResetPasswordPage() {
     e.preventDefault();
     if (password !== confirm) {
       toast.error("Passwords do not match");
+      return;
+    }
+    if (password.length < 8) {
+      toast.error("Use at least 8 characters");
       return;
     }
     setLoading(true);
@@ -99,7 +167,11 @@ function ResetPasswordPage() {
         {ready && !validSession ? (
           <>
             <p className="mt-2 text-sm text-muted-foreground">
-              This reset link is invalid or has expired. Request a new one from the sign-in page.
+              {statusMessage ??
+                "This reset link is invalid or has expired. Request a new one from the sign-in page."}
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Reset links are single-use and expire after 5 minutes.
             </p>
             <Button asChild className="mt-6 w-full">
               <Link to="/auth">Back to sign in</Link>
@@ -108,7 +180,7 @@ function ResetPasswordPage() {
         ) : (
           <>
             <p className="mt-1 text-sm text-muted-foreground">
-              Choose a strong password you don't use anywhere else.
+              Choose a strong password you don&apos;t use anywhere else.
             </p>
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <div className="space-y-1.5">
@@ -117,7 +189,8 @@ function ResetPasswordPage() {
                   id="password"
                   type="password"
                   required
-                  minLength={6}
+                  minLength={8}
+                  autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
@@ -129,14 +202,15 @@ function ResetPasswordPage() {
                   id="confirm"
                   type="password"
                   required
-                  minLength={6}
+                  minLength={8}
+                  autoComplete="new-password"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   placeholder="••••••••"
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading || !validSession}>
-                {loading ? (
+              <Button type="submit" className="w-full" disabled={loading || !ready || !validSession}>
+                {loading || !ready ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>

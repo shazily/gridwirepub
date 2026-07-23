@@ -1,5 +1,6 @@
 {
   "name": "gridwire",
+  "version": "1.1.0",
   "description": "Open-source, self-hostable portal that turns spreadsheets into production REST APIs.",
   "repository": {
     "type": "git",
@@ -18,7 +19,8 @@
     "lint:scoped": "eslint -c eslint.scoped.config.js .",
     "format": "prettier --write .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "audit:deps": "bun audit"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1079.0",
@@ -108,5 +110,9 @@
     "typescript-eslint": "^8.56.1",
     "vite": "^8.0.16",
     "vitest": "^3.2.4"
+  },
+  "overrides": {
+    "thrift": "0.23.0",
+    "brace-expansion": ">=1.1.13"
   }
 }

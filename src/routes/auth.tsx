@@ -253,11 +253,24 @@ function MarketingAuthPage({
         homeTo={homeTo}
         homeParams={homeParams}
         trailing={
-          <Button variant="outline" size="sm" className="bg-background/80 shadow-sm" asChild>
-            <Link to={homeTo} params={homeParams}>
-              Home
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="bg-background/80 shadow-sm" asChild>
+              <Link to={homeTo} params={homeParams}>
+                Home
+              </Link>
+            </Button>
+            {mode !== "signin" && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="bg-background/80 shadow-sm"
+                onClick={() => setMode("signin")}
+              >
+                Sign in
+              </Button>
+            )}
+          </div>
         }
       />
 
@@ -358,7 +371,7 @@ function MarketingAuthPage({
                   maxLength={32}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="ada_lovelace"
+                  placeholder="username"
                 />
                 <p className="text-[11px] text-muted-foreground">
                   3–32 characters. Letters, numbers, dots, underscores, hyphens.
@@ -374,7 +387,7 @@ function MarketingAuthPage({
                   required
                   value={loginId}
                   onChange={(e) => setLoginId(e.target.value)}
-                  placeholder="ada_lovelace or you@company.com"
+                  placeholder="username or you@company.com"
                 />
               </div>
             ) : mode === "forgot" ? (
@@ -385,7 +398,7 @@ function MarketingAuthPage({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@company.com or ada_lovelace"
+                  placeholder="username or you@company.com"
                 />
               </div>
             ) : (

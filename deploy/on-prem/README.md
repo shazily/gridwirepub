@@ -13,7 +13,7 @@ Run the **entire platform** on your own hardware: portal, worker, Postgres, auth
 
 ```powershell
 git clone https://github.com/shazily/gridwirepub.git
-cd gridwirepub
+cd gridwire
 .\scripts\deploy.ps1 up
 ```
 
@@ -79,6 +79,29 @@ If you change `POSTGRES_PASSWORD` after the DB volume exists, run `.\scripts\boo
 
 
 Point your tunnel at `http://127.0.0.1:3020` only. Data stays on your machine.
+
+**External login (critical):** Browsers must not use `VITE_SUPABASE_URL=http://127.0.0.1:3040`
+(that only works on the Docker host). Set:
+
+```env
+VITE_SUPABASE_URL=https://your.public.hostname
+API_EXTERNAL_URL=https://your.public.hostname
+SUPABASE_URL=http://kong:8000
+SITE_URL=https://your.public.hostname
+PUBLIC_APP_URL=https://your.public.hostname
+```
+
+The portal proxies `/auth/v1` and `/rest/v1` to Kong so a single tunnel hostname is enough.
+Then rebuild: `.\scripts\deploy.ps1 up`.
+
+```
+Portal :3020  (tunnel)
+         │
+         ├─ /           UI
+         ├─ /auth/v1/*  → Kong → GoTrue   (proxied)
+         └─ /rest/v1/*  → Kong → PostgREST (proxied)
+Kong :3040  (loopback only — not required on the tunnel)
+```
 
 Update `.env` if your public URL changes:
 

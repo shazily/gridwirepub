@@ -54,6 +54,8 @@ services:
       GOTRUE_JWT_SECRET: ${JWT_SECRET}
       GOTRUE_JWT_EXP: 3600
       GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      # Recovery / magic-link OTP lifetime (seconds). Keep short for security.
+      GOTRUE_MAILER_OTP_EXP: ${GOTRUE_MAILER_OTP_EXP:-300}
       GOTRUE_MAILER_AUTOCONFIRM: ${GOTRUE_MAILER_AUTOCONFIRM:-true}
       GOTRUE_MAILER_EXTERNAL_HOSTS: ${SITE_URL:-http://127.0.0.1:3020},kong,localhost,127.0.0.1
       GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"

@@ -177,9 +177,16 @@ export function OnPremAuthPage({
         <Link to="/">
           <Wordmark />
         </Link>
-        <Button variant="ghost" size="sm" asChild>
-          <Link to="/">Home</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/">Home</Link>
+          </Button>
+          {mode !== "signin" && (
+            <Button type="button" variant="outline" size="sm" onClick={() => setMode("signin")}>
+              Sign in
+            </Button>
+          )}
+        </div>
       </header>
 
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-10 px-4 py-10 sm:px-6 lg:flex-row lg:items-start lg:gap-16 lg:py-16">
@@ -231,7 +238,7 @@ export function OnPremAuthPage({
                   maxLength={32}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="ada_lovelace"
+                  placeholder="username"
                 />
               </div>
             )}
@@ -244,7 +251,7 @@ export function OnPremAuthPage({
                   required
                   value={loginId}
                   onChange={(e) => setLoginId(e.target.value)}
-                  placeholder="ada_lovelace or you@company.com"
+                  placeholder="username or you@company.com"
                 />
               </div>
             ) : mode === "forgot" ? (
@@ -255,7 +262,7 @@ export function OnPremAuthPage({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@company.com"
+                  placeholder="username or you@company.com"
                 />
               </div>
             ) : (

@@ -30,12 +30,17 @@ export async function sendPasswordResetEmail(args: {
     options: { redirectTo },
   });
 
-  if (error || !data?.properties?.hashed_token) {
+  const hashedToken =
+    data?.properties?.hashed_token ||
+    (data as { hashed_token?: string } | null)?.hashed_token ||
+    null;
+
+  if (error || !hashedToken) {
     // Do not leak whether the account exists.
     return { sent: true };
   }
 
-  const resetLink = buildPortalRecoveryLink(data.properties.hashed_token, publicOrigin);
+  const resetLink = buildPortalRecoveryLink(hashedToken, publicOrigin);
   const senderName = process.env.SMTP_SENDER_NAME?.trim() || "Gridwire";
 
   const ok = await sendEmail({
@@ -46,14 +51,14 @@ export async function sendPasswordResetEmail(args: {
     text: [
       `You requested a password reset for your ${senderName} account.`,
       "",
-      `Reset your password: ${resetLink}`,
+      `Reset your password (expires in 5 minutes, single use): ${resetLink}`,
       "",
       "If you did not request this, you can ignore this email.",
-      "This link expires after a short time.",
     ].join("\n"),
     html: `<p>You requested a password reset for your ${senderName} account.</p>
 <p><a href="${resetLink}">Reset your password</a></p>
-<p>If you did not request this, you can ignore this email. This link expires after a short time.</p>`,
+<p>This link expires in <strong>5 minutes</strong> and can be used only once.</p>
+<p>If you did not request this, you can ignore this email.</p>`,
   });
 
   return ok ? { sent: true } : { sent: false, reason: "delivery_failed" };

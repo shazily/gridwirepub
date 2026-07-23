@@ -1,8 +1,8 @@
 # parquetjs / thrift CVE assessment
 
-**Status:** **ACCEPTED** (owner decision, 2026-07-05) — documented risk for v1 public release. No dependency change in this ship.
+**Status:** **MITIGATED for audit** (2026-07-23, v1.1.0) — `overrides.thrift` → `0.23.0`. `bun audit` clean. Still prefer replacing `parquetjs` before any Parquet read path.
 
-**Decision:** Accept-and-document. Write-only Parquet export on trusted data; no Parquet import. Revisit before adding Parquet read/import or if npm audit policy requires zero high CVEs.
+**Decision:** Keep write-only Parquet export; pin thrift via overrides. Revisit before adding Parquet read/import.
 
 ## Dependency chain
 

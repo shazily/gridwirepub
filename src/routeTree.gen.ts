@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as FeedbackRouteImport } from './routes/feedback'
+import { Route as ProductGuideRouteImport } from './routes/product-guide'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedDashRouteImport } from './routes/_authenticated/_dash'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
@@ -103,6 +104,9 @@ const FeedbackRoute = FeedbackRouteImport.update({
   path: '/feedback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProductGuideRoute = ProductGuideRouteImport.update({
+  id: '/product-guide',
+  path: '/product-guide',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -472,6 +476,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/features': typeof FeaturesRoute
   '/feedback': typeof FeedbackRoute
+  '/product-guide': typeof ProductGuideRoute
   '/reset-password': typeof ResetPasswordRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/welcome': typeof AuthenticatedWelcomeRoute
@@ -541,6 +546,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/features': typeof FeaturesRoute
   '/feedback': typeof FeedbackRoute
+  '/product-guide': typeof ProductGuideRoute
   '/reset-password': typeof ResetPasswordRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/welcome': typeof AuthenticatedWelcomeRoute
@@ -612,6 +618,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/features': typeof FeaturesRoute
   '/feedback': typeof FeedbackRoute
+  '/product-guide': typeof ProductGuideRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/_dash': typeof AuthenticatedDashRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
@@ -684,6 +691,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/features'
     | '/feedback'
+    | '/product-guide'
     | '/reset-password'
     | '/onboarding'
     | '/welcome'
@@ -753,6 +761,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/features'
     | '/feedback'
+    | '/product-guide'
     | '/reset-password'
     | '/onboarding'
     | '/welcome'
@@ -823,6 +832,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/features'
     | '/feedback'
+    | '/product-guide'
     | '/reset-password'
     | '/_authenticated/_dash'
     | '/_authenticated/onboarding'
@@ -895,6 +905,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   FeaturesRoute: typeof FeaturesRoute
   FeedbackRoute: typeof FeedbackRoute
+  ProductGuideRoute: typeof ProductGuideRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   DocsDatasetIdRoute: typeof DocsDatasetIdRoute
   InviteTokenRoute: typeof InviteTokenRoute
@@ -953,6 +964,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FeedbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/product-guide': {
+      id: '/product-guide'
+      path: '/product-guide'
+      fullPath: '/product-guide'
+      preLoaderRoute: typeof ProductGuideRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -1557,6 +1573,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   FeaturesRoute: FeaturesRoute,
   FeedbackRoute: FeedbackRoute,
+  ProductGuideRoute: ProductGuideRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   DocsDatasetIdRoute: DocsDatasetIdRoute,
   InviteTokenRoute: InviteTokenRoute,

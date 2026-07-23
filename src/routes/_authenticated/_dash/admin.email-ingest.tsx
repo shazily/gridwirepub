@@ -1232,7 +1232,7 @@ function AdminEmailIngestPage() {
                     <code>@ingest.local</code> (and other <code>.local</code> domains) are placeholders only —
                     they are not deliverable on the public internet. Set{" "}
                     <code>INGEST_EMAIL_DOMAIN</code> / use your real domain (e.g.{" "}
-                    <code>gptlab-dpdu@mail.gptlab.ae</code>) and configure MX/inbound on that domain.
+                    <code>ingest@mail.example.com</code>) and configure MX/inbound on that domain.
                   </p>
                 )}
               </div>
@@ -1353,7 +1353,7 @@ function AdminEmailIngestPage() {
                     This webhook points at a loopback/LAN host (<code>{setup.data.publicAppUrl}</code>). External
                     mail gateways cannot reach it — that is why portal Test ingest works but real email does
                     not. Set Authentication → Public app URL and server PUBLIC_APP_URL to your public origin
-                    (e.g. https://gridwire.gptlab.ae), then point the gateway at the updated webhook.
+                    (e.g. https://portal.example.com), then point the gateway at the updated webhook.
                   </p>
                 ) : (
                   <p className="text-xs text-muted-foreground">

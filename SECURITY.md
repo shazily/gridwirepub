@@ -40,11 +40,11 @@ Generate secrets with `openssl rand -hex 32`. Use `.\scripts\bootstrap-onprem.ps
 
 Documented tradeoffs shipped intentionally. Revisit before major releases.
 
-### `parquetjs` / `thrift` (npm audit: 2 high, no fix)
+### `parquetjs` / `thrift` (transitive; overridden)
 
 - **Usage:** Write-only Parquet export in `src/lib/parquet-export.server.ts`. No Parquet read/import path.
-- **Decision:** Accept-and-document for v1. See [`docs/PENDING-parquetjs-thrift-cve.md`](docs/PENDING-parquetjs-thrift-cve.md).
-- **Mitigation:** Do not add server-side Parquet parsing until dependency is replaced.
+- **v1.1.0:** `package.json` `overrides` pin `thrift@0.23.0` and `brace-expansion>=1.1.13`. `bun audit` reports **no vulnerabilities** after install.
+- **Residual:** Prefer replacing `parquetjs` before adding any Parquet **read** path. See [`docs/PENDING-parquetjs-thrift-cve.md`](docs/PENDING-parquetjs-thrift-cve.md).
 
 ### In-memory rate limiting (single replica)
 
@@ -64,8 +64,20 @@ Documented tradeoffs shipped intentionally. Revisit before major releases.
 
 ## Dependency scanning
 
-- Run `npm audit` before releases; document unresolved high/critical findings here or in `docs/PENDING-*.md`.
+- Run `bun run audit:deps` (or `npm audit`) before releases; document unresolved high/critical findings here or in `docs/PENDING-*.md`.
 - CI runs **gitleaks** on every push/PR (`.github/workflows/gitleaks.yml`).
+- **Checkmarx / enterprise SAST:** not installed in this workspace — run your org Checkmarx project against tag `v1.1.0` (or later) after publish. Local substitutes used for v1.1.0: gitleaks (clean), `bun audit`, Vitest `tests/security/*`, and controlled white-hat probes against the demo hostname (no destructive data access).
+
+## v1.1.0 hardening (2026-07-23)
+
+| Item | Status |
+| ---- | ------ |
+| Proxied `/auth/v1` + `/rest/v1` rate limits | Added (token/signup/recover stricter) |
+| PostgREST OpenAPI at `/rest/v1/` | Blocked (404) |
+| Client `X-Forwarded-*` into Kong | Stripped |
+| Recovery OTP | 5 minutes (`GOTRUE_MAILER_OTP_EXP=300`) |
+| gitleaks full tree | No leaks |
+| `parquetjs`/`thrift` | `overrides` → thrift 0.23.0; `bun audit` clean |
 
 ## Public release checklist
 
