@@ -265,6 +265,7 @@ export async function ingestFileForConnector(opts: {
       ["raw", dataset.id, `v${versionNo}.${ext}`],
       Buffer.from(opts.bytes),
       "application/octet-stream",
+      { originalFileName: opts.fileName, orgId: dataset.org_id, datasetId: dataset.id },
     );
   }
 

@@ -78,6 +78,7 @@ export async function storeEmailAttachment(opts: {
     ["email-ingest", opts.messageId, `attachment.${ext}`],
     opts.bytes,
     "application/octet-stream",
+    { originalFileName: opts.fileName, orgId: opts.orgId },
   );
 }
 

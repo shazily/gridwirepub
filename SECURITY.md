@@ -36,6 +36,18 @@ Never set `FIELD_ENCRYPTION_ALLOW_INSECURE_DEV=true` in production.
 
 Generate secrets with `openssl rand -hex 32`. Use `.\scripts\bootstrap-onprem.ps1` for a full on-prem `.env` — do not copy a developer machine's `.env` to production.
 
+## Data at rest — where files live
+
+| Layer | Location | Encryption |
+|-------|----------|------------|
+| Raw uploads, email attachments, Parquet snapshots | MinIO (on-prem) or org S3 profile via `src/lib/storage.server.ts` | **App-level AES-256-GCM** when `STORAGE_ENCRYPTION_KEY` (or `FIELD_ENCRYPTION_KEY`) is set — ciphertext in object store + `gridwire-enc: v1` metadata. Optional SSE-S3 when profile `sse: AES256`. |
+| Canonical dataset rows | Postgres `dataset_rows` | Field-level mask / hash / AES-GCM via `FIELD_ENCRYPTION_KEY` |
+| SFTP / NFS / folder connectors | **Ingress only** — worker polls and copies into MinIO/Postgres; not the durable store |
+| CBFS / path-jail | **Enforced** in `storage.server.ts` (`resolveSafeStoragePath`) + connector local FS guards (`connector-path-guard`, symlink realpath check). Object keys are opaque; original filenames are metadata only. | Reject + structured warn log with org/dataset id |
+| Volume / disk encryption | Operator / host responsibility (Docker volumes, cloud disks) | Not managed by the app; production refuses weak compose secrets and insecure-dev encryption flag |
+
+Legacy plaintext objects (no `gridwire-enc` metadata) remain readable until re-uploaded. New writes encrypt when a storage key is configured. Production boot refuses `FIELD_ENCRYPTION_ALLOW_INSECURE_DEV=true` even if `FIELD_ENCRYPTION_KEY` is set.
+
 ## Known accepted risks (v1)
 
 Documented tradeoffs shipped intentionally. Revisit before major releases.
@@ -57,6 +69,12 @@ Documented tradeoffs shipped intentionally. Revisit before major releases.
 - Access and refresh tokens persist in **`localStorage`** by default (`docs/security-session-model.md`).
 - **Limitation:** XSS in the portal origin can exfiltrate sessions. Not HttpOnly cookie-based SSO.
 - **Mitigation:** Strict CSP at the reverse proxy, no third-party scripts on authenticated routes, enable GoTrue MFA for admins.
+
+### Portal dataset row preview (step-up re-auth)
+
+- Authenticated clients **cannot SELECT** `dataset_rows` (RLS / grants). The Data tab requires username + password re-entry.
+- Unlock attempts write insert-only `audit_events` (`portal.data.view.granted` / `denied` / `locked`). Updates/deletes on `audit_events` are blocked by trigger.
+- Preview TTL is 5 minutes; switching sheets clears the unlock.
 
 ### Optional dev backend compose defaults
 

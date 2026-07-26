@@ -153,6 +153,7 @@ export async function publishVersionServer(
       ["raw", datasetId, `v${versionNo}.${ext}`],
       Buffer.from(input.fileBytes),
       "application/octet-stream",
+      { originalFileName: input.fileName, orgId: input.orgId, datasetId },
     );
   }
 

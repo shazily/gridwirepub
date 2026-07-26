@@ -143,8 +143,11 @@ async function readSftp(connector) {
   await assertConnectorHostAllowed(cfg.host);
   const sftp = new SftpClient();
   const rawPath = cfg.path || ".";
-  if (String(rawPath).includes("..")) {
-    throw new Error("SFTP path must not contain parent-directory segments");
+  if (String(rawPath).includes("\0") || String(rawPath).includes("..")) {
+    throw new Error("SFTP path must not contain parent-directory segments or null bytes");
+  }
+  if (/^[a-zA-Z]:[\\/]/.test(String(rawPath))) {
+    throw new Error("SFTP path must not be a Windows drive path");
   }
   const dir = rawPath.replace(/\/[^/]*\*[^/]*$/, "") || rawPath || ".";
   const pattern = rawPath.split("/").pop();

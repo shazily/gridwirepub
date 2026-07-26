@@ -103,12 +103,12 @@ export async function storePdfDraftBytes(opts: {
 }): Promise<string | null> {
   if (!storageEnabled()) return null;
   const profile = await orgStorageProfile(opts.orgId);
-  const safeName = opts.fileName.replace(/[^\w.\-]+/g, "_") || "upload.pdf";
   return putObject(
     { orgId: opts.orgId, profile },
-    ["pdf-drafts", opts.draftId, safeName],
+    ["pdf-drafts", opts.draftId, "upload.bin"],
     opts.bytes,
     "application/pdf",
+    { originalFileName: opts.fileName, orgId: opts.orgId },
   );
 }
 

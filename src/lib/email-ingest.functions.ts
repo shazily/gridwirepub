@@ -86,6 +86,7 @@ export const uploadEmailIngestTemplate = createServerFn({ method: "POST" })
         ["email-ingest", "templates", row.id, `template.${ext}`],
         bytes,
         "application/octet-stream",
+        { originalFileName: data.fileName },
       );
       await context.supabase
         .from("email_ingest_templates")
@@ -240,6 +241,7 @@ export const updateEmailIngestTemplate = createServerFn({ method: "POST" })
           ["email-ingest", "templates", data.templateId, `template.${ext}`],
           bytes,
           "application/octet-stream",
+          { originalFileName: data.fileName },
         );
         patch.template_storage_ref = templateStorageRef;
       }
