@@ -28,6 +28,11 @@ export function requireSecret(name: SecretName): string {
 /** Production fail-closed checks for connector / vault-adjacent secrets. */
 export function assertSecurityBaselineProductionConfig(): void {
   if (process.env.NODE_ENV !== "production") return;
+  if (process.env.FIELD_ENCRYPTION_ALLOW_INSECURE_DEV === "true") {
+    throw new Error(
+      "FIELD_ENCRYPTION_ALLOW_INSECURE_DEV=true is forbidden when NODE_ENV=production (fail-closed).",
+    );
+  }
   requireSecret("FIELD_ENCRYPTION_KEY");
   requireSecret("INBOUND_WEBHOOK_SECRET");
   requireSecret("WORKER_INGEST_TOKEN");

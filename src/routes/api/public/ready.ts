@@ -35,10 +35,8 @@ export const Route = createFileRoute("/api/public/ready")({
         }
 
         try {
-          const { assertFieldEncryptionProductionConfig } = await import("@/lib/field-protection.server");
-          const { assertInboundWebhookProductionConfig } = await import("@/lib/inbound-webhook-auth.server");
-          assertFieldEncryptionProductionConfig();
-          assertInboundWebhookProductionConfig();
+          const { assertProductionSecurityBootstrap } = await import("@/server/bootstrap");
+          assertProductionSecurityBootstrap();
         } catch (err) {
           return respond(false, { reason: "security_config_invalid", detail: exposeErrorDetail(err) });
         }

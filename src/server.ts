@@ -1,4 +1,7 @@
 import "./lib/error-capture";
+import { assertProductionSecurityBootstrap } from "./server/bootstrap";
+
+assertProductionSecurityBootstrap();
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";

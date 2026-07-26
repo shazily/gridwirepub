@@ -18,9 +18,14 @@ function devInsecureEncryptionAllowed(): boolean {
   );
 }
 
-/** Throws when production lacks a valid FIELD_ENCRYPTION_KEY. */
+/** Throws when production lacks a valid FIELD_ENCRYPTION_KEY or insecure-dev is enabled. */
 export function assertFieldEncryptionProductionConfig(): void {
   if (process.env.NODE_ENV !== "production") return;
+  if (process.env.FIELD_ENCRYPTION_ALLOW_INSECURE_DEV === "true") {
+    throw new Error(
+      "FIELD_ENCRYPTION_ALLOW_INSECURE_DEV=true is forbidden when NODE_ENV=production (fail-closed).",
+    );
+  }
   const raw = process.env.FIELD_ENCRYPTION_KEY ?? "";
   if (!isValidHexKey(raw)) {
     throw new Error(
