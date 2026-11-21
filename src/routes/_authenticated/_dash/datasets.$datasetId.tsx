@@ -9,6 +9,11 @@ import {
   permanentlyDeleteDatasetFn,
   restoreDatasetFn,
 } from "@/lib/dataset-lifecycle.functions";
+import {
+  probeDatasetEndpointsFn,
+} from "@/lib/api-endpoint-probe.functions";
+import type { EndpointProbeKind, EndpointProbeResult } from "@/lib/api-endpoint-probe.server";
+import { buildCursorMcpJson, buildRemoteMcpJson, MCP_DOWNLOAD_PATH } from "@/lib/mcp-install";
 import { PageHeader } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,8 +61,20 @@ import {
   ArchiveRestore,
   Trash2,
   Loader2,
+  HeartPulse,
+  CircleCheck,
+  CircleX,
+  CircleAlert,
+  Sparkles,
+  Download,
 } from "lucide-react";
 import { LineageGraph } from "@/components/lineage-graph";
+
+type ProbeUiState = {
+  byKind: Partial<Record<EndpointProbeKind, EndpointProbeResult>>;
+  running: boolean;
+  lastRunAt: string | null;
+};
 
 type Masking = "none" | "mask" | "hash" | "encrypt";
 type HashAlgo = "sha256" | "sha512" | "sha3_256" | "sha3_512" | "hmac_sha256" | "hmac_sha512";
@@ -225,6 +242,37 @@ function DatasetDetail() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to update access"),
   });
 
+  const mcpAccessMut = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const { error } = await supabase
+        .from("datasets")
+        .update({ mcp_enabled: enabled } as never)
+        .eq("id", datasetId);
+      if (error) throw error;
+      if (currentOrg) {
+        try {
+          await logAuditEvent({
+            data: {
+              orgId: currentOrg.id,
+              action: enabled ? "dataset.mcp_enabled" : "dataset.mcp_disabled",
+              resourceType: "dataset",
+              resourceId: datasetId,
+              datasetId,
+              metadata: { mcp_enabled: enabled },
+            },
+          });
+        } catch {
+          /* best-effort */
+        }
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["dataset", datasetId] });
+      toast.success("MCP access updated");
+    },
+    onError: (e) => toast.error(toUserFacingMessage(e, "Failed to update MCP access")),
+  });
+
   const fieldMut = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: { masking?: Masking; hash_algo?: HashAlgo; included?: boolean } }) => {
       const { error } = await supabase.from("dataset_fields").update(patch).eq("id", id);
@@ -238,6 +286,45 @@ function DatasetDetail() {
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [probeApiKey, setProbeApiKey] = useState("");
+  const [probeUi, setProbeUi] = useState<ProbeUiState>({
+    byKind: {},
+    running: false,
+    lastRunAt: null,
+  });
+
+  const runEndpointProbe = async (kinds?: EndpointProbeKind[]) => {
+    if (!currentOrg || !sheet) {
+      toast.error("Select a workspace and sheet first");
+      return;
+    }
+    setProbeUi((prev) => ({ ...prev, running: true }));
+    try {
+      const res = await probeDatasetEndpointsFn({
+        data: {
+          orgId: currentOrg.id,
+          datasetId,
+          sheetName: sheet,
+          apiKey: probeApiKey.trim() || undefined,
+          kinds,
+        },
+      });
+      setProbeUi((prev) => {
+        const byKind: ProbeUiState["byKind"] = { ...prev.byKind };
+        for (const r of res.results) byKind[r.kind] = r;
+        return { byKind, running: false, lastRunAt: new Date().toISOString() };
+      });
+      const bad = res.results.filter((r) => r.outcome === "unhealthy" || r.outcome === "not_published");
+      const authOnly = res.results.filter((r) => r.outcome === "auth_required");
+      if (bad.length) toast.error(`${bad.length} endpoint(s) failed health check`);
+      else if (authOnly.length && !probeApiKey.trim())
+        toast.message("Endpoints reachable — paste an API key for a full authenticated check");
+      else toast.success("Endpoint health checks passed");
+    } catch (err) {
+      setProbeUi((prev) => ({ ...prev, running: false }));
+      toast.error(toUserFacingMessage(err, "Health check failed"));
+    }
+  };
 
   const archiveMut = useMutation({
     mutationFn: async () => {
@@ -580,15 +667,121 @@ function DatasetDetail() {
           )}
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Endpoints</CardTitle></CardHeader>
+            <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
+              <div>
+                <CardTitle className="text-base">Endpoints</CardTitle>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Live health checks hit the real API paths (independent of Swagger CDN).
+                  {probeUi.lastRunAt && (
+                    <> Last run {new Date(probeUi.lastRunAt).toLocaleTimeString()}.</>
+                  )}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={probeUi.running || !sheet || isArchived}
+                onClick={() => void runEndpointProbe()}
+              >
+                {probeUi.running ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <HeartPulse className="h-4 w-4" />
+                )}
+                Test all endpoints
+              </Button>
+            </CardHeader>
             <CardContent className="space-y-4">
-              <EndpointRow method="GET" label="Rows" url={endpoint} onCopy={copy} />
-              <EndpointRow method="GET" label="Schema" url={`${endpoint}/schema`} onCopy={copy} />
-              <EndpointRow method="GET" label="Dataset / poll" url={base} onCopy={copy} />
-              <EndpointRow method="GET" label="OpenAPI spec" url={`${base}/openapi.json`} onCopy={copy} />
-              <EndpointRow method="GET" label="Data contract (JSON)" url={`${base}/contract.json`} onCopy={copy} />
-              <EndpointRow method="GET" label="Data contract (YAML)" url={`${base}/contract.yaml`} onCopy={copy} />
-              <EndpointRow method="GET" label="Lineage graph" url={`${base}/lineage.json`} onCopy={copy} />
+              {!isPublic && (
+                <div className="space-y-1.5 rounded-lg border border-border bg-muted/30 p-3">
+                  <Label htmlFor="probe-api-key" className="text-xs">
+                    API key for authenticated probes (optional)
+                  </Label>
+                  <Input
+                    id="probe-api-key"
+                    type="password"
+                    autoComplete="off"
+                    placeholder="Paste a workspace API key to expect HTTP 200 on secure endpoints"
+                    value={probeApiKey}
+                    onChange={(e) => setProbeApiKey(e.target.value)}
+                    className="font-mono text-xs"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Without a key, secure endpoints report “auth required” when the route is up (401).
+                    The key is used only for this probe and is not stored.
+                  </p>
+                </div>
+              )}
+              <EndpointRow
+                method="GET"
+                label="Rows"
+                kind="rows"
+                url={endpoint}
+                onCopy={copy}
+                result={probeUi.byKind.rows}
+                probing={probeUi.running}
+                onTest={() => void runEndpointProbe(["rows"])}
+              />
+              <EndpointRow
+                method="GET"
+                label="Schema"
+                kind="schema"
+                url={`${endpoint}/schema`}
+                onCopy={copy}
+                result={probeUi.byKind.schema}
+                probing={probeUi.running}
+                onTest={() => void runEndpointProbe(["schema"])}
+              />
+              <EndpointRow
+                method="GET"
+                label="Dataset / poll"
+                kind="dataset"
+                url={base}
+                onCopy={copy}
+                result={probeUi.byKind.dataset}
+                probing={probeUi.running}
+                onTest={() => void runEndpointProbe(["dataset"])}
+              />
+              <EndpointRow
+                method="GET"
+                label="OpenAPI spec"
+                kind="openapi"
+                url={`${base}/openapi.json`}
+                onCopy={copy}
+                result={probeUi.byKind.openapi}
+                probing={probeUi.running}
+                onTest={() => void runEndpointProbe(["openapi"])}
+              />
+              <EndpointRow
+                method="GET"
+                label="Data contract (JSON)"
+                kind="contract_json"
+                url={`${base}/contract.json`}
+                onCopy={copy}
+                result={probeUi.byKind.contract_json}
+                probing={probeUi.running}
+                onTest={() => void runEndpointProbe(["contract_json"])}
+              />
+              <EndpointRow
+                method="GET"
+                label="Data contract (YAML)"
+                kind="contract_yaml"
+                url={`${base}/contract.yaml`}
+                onCopy={copy}
+                result={probeUi.byKind.contract_yaml}
+                probing={probeUi.running}
+                onTest={() => void runEndpointProbe(["contract_yaml"])}
+              />
+              <EndpointRow
+                method="GET"
+                label="Lineage graph"
+                kind="lineage"
+                url={`${base}/lineage.json`}
+                onCopy={copy}
+                result={probeUi.byKind.lineage}
+                probing={probeUi.running}
+                onTest={() => void runEndpointProbe(["lineage"])}
+              />
               <p className="text-xs text-muted-foreground">
                 Query params on Rows: <code className="font-mono">limit</code>, <code className="font-mono">offset</code>,
                 <code className="font-mono"> fields</code> (comma-separated), and any field name for equality filtering.
@@ -601,11 +794,61 @@ function DatasetDetail() {
                 <Button variant="outline" size="sm" asChild>
                   <a href={`/docs/${datasetId}`} target="_blank" rel="noreferrer"><BookOpen className="h-4 w-4" /> Swagger UI</a>
                 </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/admin/health">Platform health</Link>
+                </Button>
                 {!isPublic && (
                   <Button variant="outline" size="sm" asChild>
                     <Link to="/api-keys">Manage API keys</Link>
                   </Button>
                 )}
+              </div>
+
+              <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Add to AI (MCP)
+                  </div>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={MCP_DOWNLOAD_PATH}>
+                      <Download className="h-3.5 w-3.5" /> Download MCP
+                    </a>
+                  </Button>
+                </div>
+                {editable && (
+                  <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-background/60 px-3 py-2">
+                    <div>
+                      <div className="text-xs font-medium">Allow MCP access</div>
+                      <p className="text-[11px] text-muted-foreground">
+                        When off, agents cannot list or query this dataset (REST still works).
+                      </p>
+                    </div>
+                    <Switch
+                      checked={(ds.data as { mcp_enabled?: boolean }).mcp_enabled !== false}
+                      disabled={mcpAccessMut.isPending}
+                      onCheckedChange={(v) => mcpAccessMut.mutate(v)}
+                    />
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Paste into Cursor MCP settings. Scoped to this dataset via{" "}
+                  <code className="font-mono">GRIDWIRE_DATASET_IDS</code>. Replace{" "}
+                  <code className="font-mono">YOUR_API_KEY</code> with a workspace key.
+                </p>
+                <Snippet
+                  title="Cursor mcp.json"
+                  code={buildCursorMcpJson({
+                    baseUrl: origin || "https://your-portal.example",
+                    datasetIds: [datasetId],
+                  })}
+                />
+                <Snippet
+                  title="Remote MCP (Admin → AI must enable)"
+                  code={buildRemoteMcpJson({
+                    baseUrl: origin || "https://your-portal.example",
+                  })}
+                />
               </div>
             </CardContent>
           </Card>
@@ -968,13 +1211,70 @@ function formatCell(v: unknown): string {
   return String(v);
 }
 
-function EndpointRow({ method, label, url, onCopy }: { method: string; label: string; url: string; onCopy: (t: string) => void }) {
+function probeOutcomeIcon(result?: EndpointProbeResult) {
+  if (!result) return null;
+  switch (result.outcome) {
+    case "healthy":
+      return <CircleCheck className="h-4 w-4 text-success" aria-label="healthy" />;
+    case "auth_required":
+      return <CircleAlert className="h-4 w-4 text-warning" aria-label="auth required" />;
+    case "not_published":
+    case "unhealthy":
+      return <CircleX className="h-4 w-4 text-destructive" aria-label="unhealthy" />;
+    default: {
+      const _exhaustive: never = result.outcome;
+      return _exhaustive;
+    }
+  }
+}
+
+function EndpointRow({
+  method,
+  label,
+  kind,
+  url,
+  onCopy,
+  result,
+  probing,
+  onTest,
+}: {
+  method: string;
+  label: string;
+  kind: EndpointProbeKind;
+  url: string;
+  onCopy: (t: string) => void;
+  result?: EndpointProbeResult;
+  probing: boolean;
+  onTest: () => void;
+}) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 p-3">
-      <Badge className="bg-success/20 text-success">{method}</Badge>
-      <span className="w-24 shrink-0 text-xs text-muted-foreground">{label}</span>
-      <code className="flex-1 overflow-x-auto whitespace-nowrap font-mono text-xs">{url}</code>
-      <Button variant="ghost" size="icon" onClick={() => onCopy(url)}><Copy className="h-4 w-4" /></Button>
+    <div className="space-y-1.5 rounded-lg border border-border bg-muted/40 p-3">
+      <div className="flex items-center gap-2">
+        <Badge className="bg-success/20 text-success">{method}</Badge>
+        <span className="w-28 shrink-0 text-xs text-muted-foreground">{label}</span>
+        <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap font-mono text-xs">{url}</code>
+        {probeOutcomeIcon(result)}
+        <Button variant="ghost" size="icon" onClick={() => onCopy(url)} title="Copy URL">
+          <Copy className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onTest}
+          disabled={probing}
+          title={`Test ${kind}`}
+        >
+          {probing ? <Loader2 className="h-4 w-4 animate-spin" /> : <HeartPulse className="h-4 w-4" />}
+        </Button>
+      </div>
+      {result && (
+        <p className="text-[11px] text-muted-foreground">
+          {result.outcome.replaceAll("_", " ")}
+          {result.http_status != null ? ` · HTTP ${result.http_status}` : ""}
+          {` · ${result.latency_ms} ms`}
+          {result.detail ? ` — ${result.detail}` : ""}
+        </p>
+      )}
     </div>
   );
 }

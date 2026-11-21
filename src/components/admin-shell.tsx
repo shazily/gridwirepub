@@ -15,6 +15,7 @@ import {
   Bell,
   Layers,
   BrainCircuit,
+  HeartPulse,
 } from "lucide-react";
 import { useOrg, canManage } from "@/hooks/use-org";
 import { PageNav } from "@/components/page-nav";
@@ -28,6 +29,7 @@ const adminNav = [
   { to: "/admin/organization", label: "Organization", icon: Building2 },
   { to: "/admin/team", label: "Team & access", icon: Users },
   { to: "/admin/security", label: "Security", icon: Shield },
+  { to: "/admin/health", label: "Platform health", icon: HeartPulse },
   { to: "/admin/storage", label: "Storage", icon: HardDrive },
   { to: "/admin/authentication", label: "Authentication", icon: KeyRound },
   { to: "/admin/ai", label: "AI / PDF", icon: BrainCircuit },

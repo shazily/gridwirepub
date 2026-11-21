@@ -155,6 +155,20 @@ export const PLATFORM_FEATURES: PlatformFeature[] = [
     description: "Per-dataset toggle: open read access or API-key-only secure mode.",
   },
   {
+    id: "mcp-server",
+    category: "apis",
+    title: "MCP for AI agents",
+    description:
+      "Install Gridwire as an MCP skill in Cursor, Claude Desktop, and other AI clients — discover datasets, read schemas, and query rows with the same API keys as REST.",
+    bullets: [
+      "Downloadable MCP package (zip) + npx-ready @gridwire/mcp-server",
+      "Tools: list_datasets, get_schema, query_rows, cite_source, OpenAPI URL",
+      "Optional hosted /api/mcp endpoint when your org enables remote MCP",
+      "Per-dataset MCP access flag — keep REST live while hiding data from agents",
+    ],
+    badge: "new",
+  },
+  {
     id: "field-protection",
     category: "security",
     title: "Mask, hash & encrypt fields",
@@ -284,6 +298,7 @@ export const PLATFORM_FEATURES: PlatformFeature[] = [
 
 /** Curated subset for the marketing homepage hero slideshow (key platform capabilities) */
 export const MARKETING_SLIDESHOW_FEATURE_IDS: string[] = [
+  "mcp-server",
   "field-protection",
   "parse-spreadsheets",
   "pdf-parser",

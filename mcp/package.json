@@ -1,0 +1,46 @@
+{
+  "name": "@gridwire/mcp-server",
+  "version": "0.1.0",
+  "description": "Model Context Protocol server for Gridwire — discover and query published dataset APIs from AI clients.",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shazily/gridwire.git",
+    "directory": "mcp"
+  },
+  "bin": {
+    "gridwire-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "bun run src/index.ts",
+    "dev": "bun run --watch src/index.ts",
+    "test": "bun test",
+    "prepublishOnly": "bun run build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.16.5",
+    "typescript": "^5.8.3"
+  }
+}

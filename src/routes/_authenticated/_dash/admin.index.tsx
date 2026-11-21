@@ -20,6 +20,7 @@ import {
   HardDrive,
   BookOpen,
   BrainCircuit,
+  HeartPulse,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/_dash/admin/")({
@@ -107,6 +108,7 @@ function AdminHome() {
     { to: "/admin/team", label: "Team & access", description: "Invite people, assign roles, and remove access.", icon: Users, stat: stats.data?.members },
     { to: "/admin/workspaces", label: "Your workspaces", description: `Portal links and switching. ${orgs.length} on this account.`, icon: Building2, stat: orgs.length, statLabel: "on your account" },
     { to: "/admin/security", label: "Security", description: "Portal IP allowlist and access control.", icon: ShieldAlert },
+    { to: "/admin/health", label: "Platform health", description: "Live checks for portal, database, storage, and security bootstrap.", icon: HeartPulse },
     { to: "/admin/storage", label: "Storage & quotas", description: "Object storage, upload limits, and team space allocation.", icon: HardDrive },
     { to: "/admin/authentication", label: "Authentication", description: "SSO, MFA policy, org SMTP and SMS for OTP.", icon: KeyRound },
     { to: "/admin/ai", label: "AI / PDF", description: "LLM provider keys and PDF table parser settings.", icon: BrainCircuit },

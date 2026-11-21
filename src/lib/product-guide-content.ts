@@ -135,7 +135,8 @@ export const ADMIN_SHOTS: GuideShot[] = [
   {
     src: "/product-guide/23-admin-api-docs.png",
     alt: "API documentation",
-    caption: "API docs — in-product documentation for Bearer auth, ETag polling, cURL/Postman examples.",
+    caption:
+      "API docs — Bearer auth, ETag polling, cURL/Postman, and MCP install (download zip, Cursor/Claude snippets, optional remote /api/mcp).",
   },
 ];
 
@@ -266,6 +267,10 @@ export const DEPLOY_STEPS: { title: string; body: string }[] = [
   {
     title: "Test data plane",
     body: "Upload a CSV via Datasets → New, publish, create an API key, call /api/v1/datasets/{id}/{sheet} with Authorization: Bearer <key>. Confirm ETag/If-None-Match 304 behavior from Admin → API docs guidance.",
+  },
+  {
+    title: "Add MCP for AI clients",
+    body: "Download the MCP zip from /api/public/mcp/download (or Admin → API docs). Point Cursor/Claude at GRIDWIRE_BASE_URL + API key. Optionally enable remote MCP under Admin → AI, then use url https://<portal>/api/mcp. Stewards can disable MCP per dataset while keeping REST live.",
   },
 ];
 

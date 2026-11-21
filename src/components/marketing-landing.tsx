@@ -6,6 +6,7 @@ import { GRIDWIRE_GITHUB_REPO_URL } from "@/lib/github";
 import { PublicSiteFooter, PublicSiteHeader } from "@/components/public-chrome";
 import { PublicMarketingNav } from "@/components/public-marketing-nav";
 import { MARKETING_SLIDESHOW_FEATURE_IDS, getFeatureById } from "@/lib/platform-features";
+import { MCP_DOWNLOAD_PATH } from "@/lib/mcp-install";
 import { cn } from "@/lib/utils";
 import {
   UploadCloud,
@@ -22,6 +23,8 @@ import {
   Bell,
   Mail,
   FileScan,
+  Sparkles,
+  Download,
   type LucideIcon,
 } from "lucide-react";
 
@@ -36,6 +39,7 @@ const SLIDESHOW_ICONS: Record<string, LucideIcon> = {
   "versioning-diffs": GitBranch,
   connectors: Cable,
   "openapi-swagger": BookOpen,
+  "mcp-server": Sparkles,
   alerts: Bell,
 };
 
@@ -117,7 +121,9 @@ function HeroMarketingCopy() {
       reaches your <span className="text-foreground font-medium">warehouse</span> instead of dying in
       someone&apos;s inbox. Every publish builds a{" "}
       <span className="text-foreground font-medium">versioned API</span> with{" "}
-      <span className="text-foreground font-medium">lineage you can audit</span>.
+      <span className="text-foreground font-medium">lineage you can audit</span> — and a downloadable{" "}
+      <span className="text-foreground font-medium">MCP skill</span> so Cursor and Claude can query the same
+      data with your API keys.
     </p>
   );
 }
@@ -230,6 +236,41 @@ function NewAiPdfParsingPanel() {
             templates for recurring SFTP and folder PDFs. Same allowlist, ClamAV, lineage, and field
             protection as spreadsheet ingest.
           </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NewMcpSkillPanel() {
+  return (
+    <div className="w-full rounded-xl border border-primary/30 bg-primary/5 p-4 backdrop-blur-sm sm:p-5">
+      <div className="flex gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/15 ring-1 ring-primary/25">
+          <Sparkles className="h-5 w-5 text-primary" aria-hidden />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-foreground sm:text-base">MCP skill for AI chats</p>
+            <Badge className="border-transparent text-[10px] uppercase tracking-wide shadow-none">
+              New
+            </Badge>
+          </div>
+          <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+            Add Gridwire to Cursor, Claude Desktop, and other MCP clients. Agents discover published
+            datasets, read schemas, and query rows with your existing API keys — download the MCP package
+            or install via npx.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" className="bg-background/70" asChild>
+              <a href={MCP_DOWNLOAD_PATH}>
+                <Download className="h-3.5 w-3.5" /> Download MCP
+              </a>
+            </Button>
+            <Button size="sm" variant="ghost" asChild>
+              <Link to="/features">See MCP features</Link>
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -427,6 +468,7 @@ export function MarketingLandingPage() {
             <HeroMarketingCopy />
 
             <IngestPathPanel />
+            <NewMcpSkillPanel />
             <NewAiPdfParsingPanel />
             <AudiencePanel />
             <DifferentiationPanel />
@@ -441,6 +483,11 @@ export function MarketingLandingPage() {
                 <Link to="/auth" search={{ mode: "signin" }}>
                   Sign in
                 </Link>
+              </Button>
+              <Button size="lg" variant="outline" className="w-full bg-background/60 sm:w-auto" asChild>
+                <a href={MCP_DOWNLOAD_PATH}>
+                  <Download className="h-4 w-4" /> Download MCP
+                </a>
               </Button>
               <Button size="lg" variant="outline" className="w-full bg-background/60 sm:w-auto" asChild>
                 <Link to="/features">Explore all features</Link>

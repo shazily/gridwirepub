@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useOrg, canManage } from "@/hooks/use-org";
@@ -39,6 +39,7 @@ import {
   updateOrgAiConfigFn,
 } from "@/lib/llm-api-keys.functions";
 import type { LlmApiKeyPublic, LlmProvider, OrgAiConfig } from "@/lib/llm-api-keys-types";
+import { MCP_DOWNLOAD_PATH } from "@/lib/mcp-install";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -166,6 +167,7 @@ function AdminAiPdf() {
   const aiConfig: OrgAiConfig = data.data?.aiConfig ?? {};
   const pdfEnabled = data.data?.effective?.pdfParseEnabled ?? aiConfig.pdf_parse_enabled !== false;
   const pdfMock = data.data?.effective?.pdfParseMock ?? aiConfig.pdf_parse_mock === true;
+  const mcpRemoteEnabled = aiConfig.mcp_remote_enabled === true;
   const envForcesMock =
     data.data?.effective?.envPdfParseMock === true && aiConfig.pdf_parse_mock !== true && !aiConfig.active_llm_key_id;
   const activeId = aiConfig.active_llm_key_id ?? null;
@@ -464,12 +466,16 @@ function AdminAiPdf() {
     }
   }
 
-  async function savePdfSettings(patch: { pdfParseEnabled?: boolean; pdfParseMock?: boolean }) {
+  async function savePdfSettings(patch: {
+    pdfParseEnabled?: boolean;
+    pdfParseMock?: boolean;
+    mcpRemoteEnabled?: boolean;
+  }) {
     if (!orgId) return;
     setSavingSettings(true);
     try {
       await updateOrgAiConfigFn({ data: { orgId, ...patch } });
-      toast.success("PDF settings saved");
+      toast.success(patch.mcpRemoteEnabled !== undefined ? "MCP settings saved" : "PDF settings saved");
       await refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save settings");
@@ -564,6 +570,39 @@ function AdminAiPdf() {
                 disabled={!manage || savingSettings}
                 onCheckedChange={(v) => savePdfSettings({ pdfParseMock: v })}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">MCP for AI agents</CardTitle>
+            <CardDescription>
+              Let API keys use the hosted MCP endpoint at <code className="font-mono text-xs">/api/mcp</code>.
+              Download the offline package anytime from the marketing site or Admin → API docs.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-medium">Enable remote MCP</div>
+                <p className="text-xs text-muted-foreground">
+                  Off by default. When on, clients can connect with Bearer API keys (stdio download still works).
+                </p>
+              </div>
+              <Switch
+                checked={mcpRemoteEnabled}
+                disabled={!manage || savingSettings}
+                onCheckedChange={(v) => savePdfSettings({ mcpRemoteEnabled: v })}
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <a href={MCP_DOWNLOAD_PATH}>Download MCP zip</a>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/admin/api-docs">Install snippets</Link>
+              </Button>
             </div>
           </CardContent>
         </Card>

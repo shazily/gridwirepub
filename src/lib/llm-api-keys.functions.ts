@@ -206,6 +206,7 @@ export const updateOrgAiConfigFn = createServerFn({ method: "POST" })
         orgId: z.string().uuid(),
         pdfParseEnabled: z.boolean().optional(),
         pdfParseMock: z.boolean().optional(),
+        mcpRemoteEnabled: z.boolean().optional(),
       })
       .parse(data),
   )
@@ -215,6 +216,7 @@ export const updateOrgAiConfigFn = createServerFn({ method: "POST" })
     const patch: Record<string, boolean> = {};
     if (data.pdfParseEnabled !== undefined) patch.pdf_parse_enabled = data.pdfParseEnabled;
     if (data.pdfParseMock !== undefined) patch.pdf_parse_mock = data.pdfParseMock;
+    if (data.mcpRemoteEnabled !== undefined) patch.mcp_remote_enabled = data.mcpRemoteEnabled;
     const aiConfig = await updateOrgAiConfig(data.orgId, patch);
     return { aiConfig };
   });

@@ -171,6 +171,8 @@ export type ResolvedDataset = {
   status: string;
   current_version_id: string | null;
   updated_at: string;
+  /** When false, MCP tools must not expose this dataset (REST still allowed). */
+  mcp_enabled?: boolean;
 };
 
 // Validates the API key bearer token (for secure datasets). Returns the key row or null.
@@ -201,11 +203,13 @@ export async function authorizeDataset(
 > {
   const { data: ds } = await admin
     .from("datasets")
-    .select("id, org_id, name, description, slug, api_access, status, current_version_id, updated_at")
+    .select(
+      "id, org_id, name, description, slug, api_access, status, current_version_id, updated_at, mcp_enabled",
+    )
     .eq("id", datasetId)
     .maybeSingle();
   if (!ds) return { ok: false, response: json({ error: "Dataset not found" }, 404) };
-  const dataset = ds as ResolvedDataset;
+  const dataset = ds as ResolvedDataset & { mcp_enabled?: boolean };
   if (dataset.status !== "published" || !dataset.current_version_id)
     return { ok: false, response: json({ error: "Dataset not published" }, 404) };
 

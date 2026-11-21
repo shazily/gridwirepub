@@ -24,6 +24,7 @@ import {
   Mail,
   Network,
   ShieldCheck,
+  Sparkles,
   UploadCloud,
   Users,
   type LucideIcon,
@@ -47,6 +48,7 @@ const FEATURE_ICONS: Partial<Record<string, LucideIcon>> = {
   "portal-ip-allowlist": Globe,
   "storage-meter": HardDrive,
   "api-keys": KeyRound,
+  "mcp-server": Sparkles,
 };
 
 function FeatureIcon({ featureId, category }: { featureId: string; category: PlatformFeatureCategoryId }) {

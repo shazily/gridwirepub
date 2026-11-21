@@ -20,7 +20,11 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "audit:deps": "bun audit"
+    "audit:deps": "bun audit",
+    "mcp": "bun run ./mcp/src/index.ts",
+    "mcp:build": "bun run --cwd mcp build",
+    "mcp:test": "bun test --cwd mcp",
+    "mcp:pack": "bun run scripts/pack-mcp.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1079.0",
@@ -28,6 +32,7 @@
     "@fontsource-variable/space-grotesk": "^5.2.10",
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@hookform/resolvers": "^5.2.2",
+    "@modelcontextprotocol/sdk": "1.32.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.8",

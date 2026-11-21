@@ -1,5 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+/** Latest API key without re-subscribing the Swagger mount effect to every keystroke. */
+function useLatest<T>(value: T) {
+  const ref = useRef(value);
+  ref.current = value;
+  return ref;
+}
 
 export const Route = createFileRoute("/docs/$datasetId")({
   head: () => ({
@@ -12,73 +19,275 @@ export const Route = createFileRoute("/docs/$datasetId")({
 });
 
 const SWAGGER_VERSION = "5.17.14";
+const CDN_CANDIDATES = [
+  `https://unpkg.com/swagger-ui-dist@${SWAGGER_VERSION}`,
+  `https://cdn.jsdelivr.net/npm/swagger-ui-dist@${SWAGGER_VERSION}`,
+] as const;
+
+type SpecStatus =
+  | { state: "checking" }
+  | { state: "ok" }
+  | { state: "auth_required"; status: number }
+  | { state: "not_published"; status: number }
+  | { state: "error"; status: number | null; detail: string };
 
 function DocsPage() {
   const { datasetId } = Route.useParams();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [uiReady, setUiReady] = useState(false);
+  const [uiError, setUiError] = useState<string | null>(null);
+  const [specStatus, setSpecStatus] = useState<SpecStatus>({ state: "checking" });
+  const [apiKey, setApiKey] = useState("");
+  const apiKeyRef = useLatest(apiKey);
+  const [reloadToken, setReloadToken] = useState(0);
+  const openApiPath = `/api/v1/datasets/${datasetId}/openapi.json`;
+
+  const checkSpec = useCallback(
+    async (bearer?: string): Promise<SpecStatus> => {
+      try {
+        const headers: Record<string, string> = { Accept: "application/json" };
+        if (bearer?.trim()) headers.Authorization = `Bearer ${bearer.trim()}`;
+        const res = await fetch(openApiPath, {
+          method: "GET",
+          headers,
+          signal: AbortSignal.timeout(10_000),
+        });
+        if (res.ok) return { state: "ok" };
+        const text = await res.text().catch(() => "");
+        if (res.status === 401 || res.status === 403) {
+          return { state: "auth_required", status: res.status };
+        }
+        if (res.status === 404 && /not published/i.test(text)) {
+          return { state: "not_published", status: res.status };
+        }
+        return {
+          state: "error",
+          status: res.status,
+          detail: text.slice(0, 200) || `HTTP ${res.status}`,
+        };
+      } catch (err) {
+        return {
+          state: "error",
+          status: null,
+          detail: err instanceof Error ? err.message : "Could not reach OpenAPI endpoint",
+        };
+      }
+    },
+    [openApiPath],
+  );
 
   useEffect(() => {
     let cancelled = false;
 
-    function loadCss() {
-      if (document.getElementById("swagger-ui-css")) return;
+    function ensureCss(base: string) {
+      const existing = document.getElementById("swagger-ui-css") as HTMLLinkElement | null;
+      if (existing) {
+        existing.href = `${base}/swagger-ui.css`;
+        return;
+      }
       const link = document.createElement("link");
       link.id = "swagger-ui-css";
       link.rel = "stylesheet";
-      link.href = `https://unpkg.com/swagger-ui-dist@${SWAGGER_VERSION}/swagger-ui.css`;
+      link.href = `${base}/swagger-ui.css`;
       document.head.appendChild(link);
     }
 
-    function loadScript(): Promise<void> {
+    function loadScript(base: string): Promise<void> {
       return new Promise((resolve, reject) => {
-        if ((window as unknown as { SwaggerUIBundle?: unknown }).SwaggerUIBundle) return resolve();
+        if ((window as unknown as { SwaggerUIBundle?: unknown }).SwaggerUIBundle) {
+          resolve();
+          return;
+        }
         const script = document.createElement("script");
-        script.src = `https://unpkg.com/swagger-ui-dist@${SWAGGER_VERSION}/swagger-ui-bundle.js`;
+        script.src = `${base}/swagger-ui-bundle.js`;
         script.crossOrigin = "anonymous";
         script.onload = () => resolve();
-        script.onerror = () => reject(new Error("Failed to load Swagger UI"));
+        script.onerror = () => reject(new Error(`Failed to load Swagger UI from ${base}`));
         document.body.appendChild(script);
       });
     }
 
     (async () => {
-      try {
-        loadCss();
-        await loadScript();
-        if (cancelled || !containerRef.current) return;
-        const SwaggerUIBundle = (window as unknown as { SwaggerUIBundle: (o: unknown) => void }).SwaggerUIBundle;
-        SwaggerUIBundle({
-          url: `/api/v1/datasets/${datasetId}/openapi.json`,
-          domNode: containerRef.current,
-          deepLinking: true,
-          persistAuthorization: true,
-          tryItOutEnabled: true,
-        });
-        setStatus("ready");
-      } catch {
-        if (!cancelled) setStatus("error");
+      setUiReady(false);
+      setUiError(null);
+      if (containerRef.current) containerRef.current.innerHTML = "";
+
+      const bearer = apiKeyRef.current.trim();
+      const spec = await checkSpec(bearer);
+      if (cancelled) return;
+      setSpecStatus(spec);
+
+      if (spec.state === "not_published" || spec.state === "error") {
+        setUiError(null);
+        return;
       }
+      if (spec.state === "auth_required") {
+        // Wait for the operator to paste a key — do not mount empty Swagger yet.
+        return;
+      }
+
+      let lastErr: unknown = null;
+      for (const base of CDN_CANDIDATES) {
+        try {
+          ensureCss(base);
+          await loadScript(base);
+          lastErr = null;
+          break;
+        } catch (err) {
+          lastErr = err;
+          delete (window as unknown as { SwaggerUIBundle?: unknown }).SwaggerUIBundle;
+          document.querySelector(`script[src="${base}/swagger-ui-bundle.js"]`)?.remove();
+        }
+      }
+
+      if (cancelled) return;
+      if (lastErr) {
+        setUiError(lastErr instanceof Error ? lastErr.message : "CDN blocked or offline");
+        return;
+      }
+      if (!containerRef.current) return;
+
+      const SwaggerUIBundle = (window as unknown as { SwaggerUIBundle: (o: unknown) => void }).SwaggerUIBundle;
+      SwaggerUIBundle({
+        url: openApiPath,
+        domNode: containerRef.current,
+        deepLinking: true,
+        persistAuthorization: true,
+        tryItOutEnabled: true,
+        requestInterceptor: (req: { headers: Record<string, string> }) => {
+          if (bearer) req.headers.Authorization = `Bearer ${bearer}`;
+          return req;
+        },
+      });
+      setUiReady(true);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [datasetId]);
+  }, [datasetId, openApiPath, reloadToken, checkSpec, apiKeyRef]);
 
   return (
     <div style={{ minHeight: "100vh", background: "#fff" }}>
-      {status === "loading" && (
+      <div
+        style={{
+          padding: "1rem 2rem",
+          fontFamily: "system-ui, sans-serif",
+          borderBottom: "1px solid #e5e7eb",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "0.75rem",
+          alignItems: "center",
+          background: "#f8fafc",
+        }}
+      >
+        <strong style={{ marginRight: "0.5rem" }}>API reference</strong>
+        <input
+          type="password"
+          placeholder="API key (required for secure datasets)"
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+          style={{
+            flex: "1 1 220px",
+            maxWidth: 420,
+            padding: "0.4rem 0.6rem",
+            border: "1px solid #cbd5e1",
+            borderRadius: 6,
+            fontFamily: "ui-monospace, monospace",
+            fontSize: 12,
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => setReloadToken((n) => n + 1)}
+          style={{
+            padding: "0.4rem 0.75rem",
+            borderRadius: 6,
+            border: "1px solid #cbd5e1",
+            background: "#fff",
+            cursor: "pointer",
+            fontSize: 13,
+          }}
+        >
+          Reload spec
+        </button>
+        <a href={openApiPath} style={{ fontSize: 13, color: "#0b57d0" }}>
+          Raw OpenAPI JSON
+        </a>
+        <Link to="/admin/health" style={{ fontSize: 13, color: "#0b57d0" }}>
+          Platform health
+        </Link>
+      </div>
+
+      {specStatus.state === "checking" && !uiReady && (
         <div style={{ padding: "2rem", fontFamily: "system-ui, sans-serif", color: "#555" }}>
-          Loading API reference…
+          Checking OpenAPI endpoint…
         </div>
       )}
-      {status === "error" && (
+
+      {specStatus.state === "auth_required" && (
+        <div
+          style={{
+            padding: "1rem 2rem",
+            fontFamily: "system-ui, sans-serif",
+            background: "#fff8e6",
+            borderBottom: "1px solid #f0d78c",
+            color: "#6b4e00",
+          }}
+        >
+          This dataset is <strong>secure</strong>. Paste a workspace API key above and click{" "}
+          <strong>Reload spec</strong>. Without a key, Swagger cannot fetch{" "}
+          <code>{openApiPath}</code> (HTTP {specStatus.status}).
+        </div>
+      )}
+
+      {specStatus.state === "not_published" && (
+        <div
+          style={{
+            padding: "1rem 2rem",
+            fontFamily: "system-ui, sans-serif",
+            background: "#fdecea",
+            borderBottom: "1px solid #f5c2c0",
+            color: "#8a1f11",
+          }}
+        >
+          Dataset is not published (OpenAPI HTTP {specStatus.status}). Restore/publish from the dataset
+          page, then reload. Prefer the in-app <strong>Test endpoints</strong> health checks when Swagger
+          is unavailable.
+        </div>
+      )}
+
+      {specStatus.state === "error" && (
+        <div
+          style={{
+            padding: "1rem 2rem",
+            fontFamily: "system-ui, sans-serif",
+            background: "#fdecea",
+            borderBottom: "1px solid #f5c2c0",
+            color: "#8a1f11",
+          }}
+        >
+          OpenAPI probe failed
+          {specStatus.status != null ? ` (HTTP ${specStatus.status})` : ""}: {specStatus.detail}
+        </div>
+      )}
+
+      {uiError && (
         <div style={{ padding: "2rem", fontFamily: "system-ui, sans-serif", color: "#b00020" }}>
-          Could not load the API reference. The dataset may be unpublished, or the spec is at{" "}
-          <code>/api/v1/datasets/{datasetId}/openapi.json</code>.
+          <p style={{ marginTop: 0 }}>
+            Could not load the interactive Swagger UI ({uiError}). Needs outbound access to unpkg or
+            jsDelivr.
+          </p>
+          <p>
+            Use <code>{openApiPath}</code> directly, or dataset → API → <strong>Test endpoints</strong> /{" "}
+            <Link to="/admin/health" style={{ color: "#0b57d0" }}>
+              Platform health
+            </Link>
+            .
+          </p>
         </div>
       )}
+
       <div ref={containerRef} />
     </div>
   );

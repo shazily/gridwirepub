@@ -18,7 +18,13 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { BookOpen, Copy, Download, KeyRound } from "lucide-react";
+import { BookOpen, Copy, Download, KeyRound, Sparkles } from "lucide-react";
+import {
+  buildClaudeDesktopMcpJson,
+  buildCursorMcpJson,
+  buildRemoteMcpJson,
+  MCP_DOWNLOAD_PATH,
+} from "@/lib/mcp-install";
 
 export const Route = createFileRoute("/_authenticated/_dash/admin/api-docs")({
   component: ApiDocs,
@@ -273,6 +279,62 @@ function ApiDocs() {
               </CardContent>
             </Card>
           )}
+
+          <Card className="mb-4">
+            <CardHeader>
+              <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+                <Sparkles className="h-4 w-4 text-primary" /> Add Gridwire as an AI skill (MCP)
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Install the Gridwire MCP server in Cursor or Claude Desktop. Agents can{" "}
+                <code className="font-mono text-xs">list_datasets</code>,{" "}
+                <code className="font-mono text-xs">get_schema</code>, and{" "}
+                <code className="font-mono text-xs">query_rows</code> using a workspace API key.
+                See <code className="font-mono text-xs">mcp/README.md</code> and{" "}
+                <code className="font-mono text-xs">docs/FEATURE-BACKLOG-MCP.md</code>.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <Button variant="default" size="sm" asChild>
+                  <a href={MCP_DOWNLOAD_PATH}>
+                    <Download className="h-4 w-4" /> Download MCP zip
+                  </a>
+                </Button>
+              </div>
+              <div>
+                <div className="mb-1 text-xs font-medium text-muted-foreground">Cursor · mcp.json (stdio / npx)</div>
+                <CodeBlock
+                  code={buildCursorMcpJson({
+                    baseUrl: origin,
+                    datasetIds: selected ? [selected.id] : undefined,
+                  })}
+                />
+              </div>
+              <div>
+                <div className="mb-1 text-xs font-medium text-muted-foreground">
+                  Claude Desktop · claude_desktop_config.json
+                </div>
+                <CodeBlock
+                  code={buildClaudeDesktopMcpJson({
+                    baseUrl: origin,
+                    datasetIds: selected ? [selected.id] : undefined,
+                  })}
+                />
+              </div>
+              <div>
+                <div className="mb-1 text-xs font-medium text-muted-foreground">
+                  Remote hosted MCP (enable under Admin → AI / PDF)
+                </div>
+                <CodeBlock code={buildRemoteMcpJson({ baseUrl: origin })} />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Replace <code className="font-mono">YOUR_API_KEY</code> with a key from Admin → API keys.
+                Discovery calls <code className="font-mono">GET /api/v1/datasets</code>. Set{" "}
+                <code className="font-mono">PUBLIC_APP_URL</code> so remote agents reach this portal.
+              </p>
+            </CardContent>
+          </Card>
 
 
           <div className="space-y-4">

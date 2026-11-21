@@ -19,6 +19,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedDashRouteImport } from './routes/_authenticated/_dash'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedWelcomeRouteImport } from './routes/_authenticated/welcome'
+import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as DocsDatasetIdRouteImport } from './routes/docs.$datasetId'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as JoinRefRouteImport } from './routes/join.$ref'
@@ -41,6 +42,7 @@ import { Route as ApiPublicConfigRouteImport } from './routes/api/public/config'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as ApiPublicMetricsRouteImport } from './routes/api/public/metrics'
 import { Route as ApiPublicReadyRouteImport } from './routes/api/public/ready'
+import { Route as ApiV1DatasetsRouteImport } from './routes/api/v1/datasets'
 import { Route as AuthenticatedDashAdminIndexRouteImport } from './routes/_authenticated/_dash/admin.index'
 import { Route as AuthenticatedDashAdminAiRouteImport } from './routes/_authenticated/_dash/admin.ai'
 import { Route as AuthenticatedDashAdminAlertsRouteImport } from './routes/_authenticated/_dash/admin.alerts'
@@ -51,6 +53,7 @@ import { Route as AuthenticatedDashAdminAuthenticationRouteImport } from './rout
 import { Route as AuthenticatedDashAdminConnectorsRouteImport } from './routes/_authenticated/_dash/admin.connectors'
 import { Route as AuthenticatedDashAdminEmailIngestRouteImport } from './routes/_authenticated/_dash/admin.email-ingest'
 import { Route as AuthenticatedDashAdminFeedbackRouteImport } from './routes/_authenticated/_dash/admin.feedback'
+import { Route as AuthenticatedDashAdminHealthRouteImport } from './routes/_authenticated/_dash/admin.health'
 import { Route as AuthenticatedDashAdminOrganizationRouteImport } from './routes/_authenticated/_dash/admin.organization'
 import { Route as AuthenticatedDashAdminSecurityRouteImport } from './routes/_authenticated/_dash/admin.security'
 import { Route as AuthenticatedDashAdminStorageRouteImport } from './routes/_authenticated/_dash/admin.storage'
@@ -66,6 +69,7 @@ import { Route as ApiPublicAuthResolveLoginRouteImport } from './routes/api/publ
 import { Route as ApiPublicAuthUsernameAvailableRouteImport } from './routes/api/public/auth/username-available'
 import { Route as ApiPublicInboundPostmarkRouteImport } from './routes/api/public/inbound/postmark'
 import { Route as ApiPublicInboundWebhookRouteImport } from './routes/api/public/inbound/webhook'
+import { Route as ApiPublicMcpDownloadRouteImport } from './routes/api/public/mcp.download'
 import { Route as ApiPublicPortalOrgSlugRouteImport } from './routes/api/public/portal.$orgSlug'
 import { Route as ApiPublicWorkerConnectorsRouteImport } from './routes/api/public/worker/connectors'
 import { Route as ApiPublicWorkerIngestRouteImport } from './routes/api/public/worker/ingest'
@@ -127,6 +131,11 @@ const AuthenticatedWelcomeRoute = AuthenticatedWelcomeRouteImport.update({
   id: '/welcome',
   path: '/welcome',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiMcpRoute = ApiMcpRouteImport.update({
+  id: '/api/mcp',
+  path: '/api/mcp',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const DocsDatasetIdRoute = DocsDatasetIdRouteImport.update({
   id: '/docs/$datasetId',
@@ -248,6 +257,11 @@ const ApiPublicReadyRoute = ApiPublicReadyRouteImport.update({
   path: '/api/public/ready',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1DatasetsRoute = ApiV1DatasetsRouteImport.update({
+  id: '/api/v1/datasets',
+  path: '/api/v1/datasets',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedDashAdminIndexRoute =
   AuthenticatedDashAdminIndexRouteImport.update({
     id: '/admin/',
@@ -306,6 +320,12 @@ const AuthenticatedDashAdminFeedbackRoute =
   AuthenticatedDashAdminFeedbackRouteImport.update({
     id: '/admin/feedback',
     path: '/admin/feedback',
+    getParentRoute: () => AuthenticatedDashRoute,
+  } as any)
+const AuthenticatedDashAdminHealthRoute =
+  AuthenticatedDashAdminHealthRouteImport.update({
+    id: '/admin/health',
+    path: '/admin/health',
     getParentRoute: () => AuthenticatedDashRoute,
   } as any)
 const AuthenticatedDashAdminOrganizationRoute =
@@ -396,6 +416,11 @@ const ApiPublicInboundWebhookRoute = ApiPublicInboundWebhookRouteImport.update({
   path: '/api/public/inbound/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicMcpDownloadRoute = ApiPublicMcpDownloadRouteImport.update({
+  id: '/api/public/mcp/download',
+  path: '/api/public/mcp/download',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicPortalOrgSlugRoute = ApiPublicPortalOrgSlugRouteImport.update({
   id: '/api/public/portal/$orgSlug',
   path: '/api/public/portal/$orgSlug',
@@ -418,9 +443,9 @@ const ApiPublicWorkerReportRoute = ApiPublicWorkerReportRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiV1DatasetsDatasetIdRoute = ApiV1DatasetsDatasetIdRouteImport.update({
-  id: '/api/v1/datasets/$datasetId',
-  path: '/api/v1/datasets/$datasetId',
-  getParentRoute: () => rootRouteImport,
+  id: '/$datasetId',
+  path: '/$datasetId',
+  getParentRoute: () => ApiV1DatasetsRoute,
 } as any)
 const ApiV1DatasetsDatasetIdSheetRoute =
   ApiV1DatasetsDatasetIdSheetRouteImport.update({
@@ -480,6 +505,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/welcome': typeof AuthenticatedWelcomeRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/docs/$datasetId': typeof DocsDatasetIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$ref': typeof JoinRefRoute
@@ -502,6 +528,7 @@ export interface FileRoutesByFullPath {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/metrics': typeof ApiPublicMetricsRoute
   '/api/public/ready': typeof ApiPublicReadyRoute
+  '/api/v1/datasets': typeof ApiV1DatasetsRouteWithChildren
   '/admin/ai': typeof AuthenticatedDashAdminAiRoute
   '/admin/alerts': typeof AuthenticatedDashAdminAlertsRoute
   '/admin/api-docs': typeof AuthenticatedDashAdminApiDocsRoute
@@ -511,6 +538,7 @@ export interface FileRoutesByFullPath {
   '/admin/connectors': typeof AuthenticatedDashAdminConnectorsRoute
   '/admin/email-ingest': typeof AuthenticatedDashAdminEmailIngestRoute
   '/admin/feedback': typeof AuthenticatedDashAdminFeedbackRoute
+  '/admin/health': typeof AuthenticatedDashAdminHealthRoute
   '/admin/organization': typeof AuthenticatedDashAdminOrganizationRoute
   '/admin/security': typeof AuthenticatedDashAdminSecurityRoute
   '/admin/storage': typeof AuthenticatedDashAdminStorageRoute
@@ -525,6 +553,7 @@ export interface FileRoutesByFullPath {
   '/api/public/auth/username-available': typeof ApiPublicAuthUsernameAvailableRoute
   '/api/public/inbound/postmark': typeof ApiPublicInboundPostmarkRoute
   '/api/public/inbound/webhook': typeof ApiPublicInboundWebhookRoute
+  '/api/public/mcp/download': typeof ApiPublicMcpDownloadRoute
   '/api/public/portal/$orgSlug': typeof ApiPublicPortalOrgSlugRoute
   '/api/public/worker/connectors': typeof ApiPublicWorkerConnectorsRoute
   '/api/public/worker/ingest': typeof ApiPublicWorkerIngestRoute
@@ -550,6 +579,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/welcome': typeof AuthenticatedWelcomeRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/docs/$datasetId': typeof DocsDatasetIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$ref': typeof JoinRefRoute
@@ -572,6 +602,7 @@ export interface FileRoutesByTo {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/metrics': typeof ApiPublicMetricsRoute
   '/api/public/ready': typeof ApiPublicReadyRoute
+  '/api/v1/datasets': typeof ApiV1DatasetsRouteWithChildren
   '/admin/ai': typeof AuthenticatedDashAdminAiRoute
   '/admin/alerts': typeof AuthenticatedDashAdminAlertsRoute
   '/admin/api-docs': typeof AuthenticatedDashAdminApiDocsRoute
@@ -581,6 +612,7 @@ export interface FileRoutesByTo {
   '/admin/connectors': typeof AuthenticatedDashAdminConnectorsRoute
   '/admin/email-ingest': typeof AuthenticatedDashAdminEmailIngestRoute
   '/admin/feedback': typeof AuthenticatedDashAdminFeedbackRoute
+  '/admin/health': typeof AuthenticatedDashAdminHealthRoute
   '/admin/organization': typeof AuthenticatedDashAdminOrganizationRoute
   '/admin/security': typeof AuthenticatedDashAdminSecurityRoute
   '/admin/storage': typeof AuthenticatedDashAdminStorageRoute
@@ -595,6 +627,7 @@ export interface FileRoutesByTo {
   '/api/public/auth/username-available': typeof ApiPublicAuthUsernameAvailableRoute
   '/api/public/inbound/postmark': typeof ApiPublicInboundPostmarkRoute
   '/api/public/inbound/webhook': typeof ApiPublicInboundWebhookRoute
+  '/api/public/mcp/download': typeof ApiPublicMcpDownloadRoute
   '/api/public/portal/$orgSlug': typeof ApiPublicPortalOrgSlugRoute
   '/api/public/worker/connectors': typeof ApiPublicWorkerConnectorsRoute
   '/api/public/worker/ingest': typeof ApiPublicWorkerIngestRoute
@@ -623,6 +656,7 @@ export interface FileRoutesById {
   '/_authenticated/_dash': typeof AuthenticatedDashRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/welcome': typeof AuthenticatedWelcomeRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/docs/$datasetId': typeof DocsDatasetIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$ref': typeof JoinRefRoute
@@ -645,6 +679,7 @@ export interface FileRoutesById {
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/metrics': typeof ApiPublicMetricsRoute
   '/api/public/ready': typeof ApiPublicReadyRoute
+  '/api/v1/datasets': typeof ApiV1DatasetsRouteWithChildren
   '/_authenticated/_dash/admin/ai': typeof AuthenticatedDashAdminAiRoute
   '/_authenticated/_dash/admin/alerts': typeof AuthenticatedDashAdminAlertsRoute
   '/_authenticated/_dash/admin/api-docs': typeof AuthenticatedDashAdminApiDocsRoute
@@ -654,6 +689,7 @@ export interface FileRoutesById {
   '/_authenticated/_dash/admin/connectors': typeof AuthenticatedDashAdminConnectorsRoute
   '/_authenticated/_dash/admin/email-ingest': typeof AuthenticatedDashAdminEmailIngestRoute
   '/_authenticated/_dash/admin/feedback': typeof AuthenticatedDashAdminFeedbackRoute
+  '/_authenticated/_dash/admin/health': typeof AuthenticatedDashAdminHealthRoute
   '/_authenticated/_dash/admin/organization': typeof AuthenticatedDashAdminOrganizationRoute
   '/_authenticated/_dash/admin/security': typeof AuthenticatedDashAdminSecurityRoute
   '/_authenticated/_dash/admin/storage': typeof AuthenticatedDashAdminStorageRoute
@@ -668,6 +704,7 @@ export interface FileRoutesById {
   '/api/public/auth/username-available': typeof ApiPublicAuthUsernameAvailableRoute
   '/api/public/inbound/postmark': typeof ApiPublicInboundPostmarkRoute
   '/api/public/inbound/webhook': typeof ApiPublicInboundWebhookRoute
+  '/api/public/mcp/download': typeof ApiPublicMcpDownloadRoute
   '/api/public/portal/$orgSlug': typeof ApiPublicPortalOrgSlugRoute
   '/api/public/worker/connectors': typeof ApiPublicWorkerConnectorsRoute
   '/api/public/worker/ingest': typeof ApiPublicWorkerIngestRoute
@@ -695,6 +732,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/onboarding'
     | '/welcome'
+    | '/api/mcp'
     | '/docs/$datasetId'
     | '/invite/$token'
     | '/join/$ref'
@@ -717,6 +755,7 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/metrics'
     | '/api/public/ready'
+    | '/api/v1/datasets'
     | '/admin/ai'
     | '/admin/alerts'
     | '/admin/api-docs'
@@ -726,6 +765,7 @@ export interface FileRouteTypes {
     | '/admin/connectors'
     | '/admin/email-ingest'
     | '/admin/feedback'
+    | '/admin/health'
     | '/admin/organization'
     | '/admin/security'
     | '/admin/storage'
@@ -740,6 +780,7 @@ export interface FileRouteTypes {
     | '/api/public/auth/username-available'
     | '/api/public/inbound/postmark'
     | '/api/public/inbound/webhook'
+    | '/api/public/mcp/download'
     | '/api/public/portal/$orgSlug'
     | '/api/public/worker/connectors'
     | '/api/public/worker/ingest'
@@ -765,6 +806,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/onboarding'
     | '/welcome'
+    | '/api/mcp'
     | '/docs/$datasetId'
     | '/invite/$token'
     | '/join/$ref'
@@ -787,6 +829,7 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/metrics'
     | '/api/public/ready'
+    | '/api/v1/datasets'
     | '/admin/ai'
     | '/admin/alerts'
     | '/admin/api-docs'
@@ -796,6 +839,7 @@ export interface FileRouteTypes {
     | '/admin/connectors'
     | '/admin/email-ingest'
     | '/admin/feedback'
+    | '/admin/health'
     | '/admin/organization'
     | '/admin/security'
     | '/admin/storage'
@@ -810,6 +854,7 @@ export interface FileRouteTypes {
     | '/api/public/auth/username-available'
     | '/api/public/inbound/postmark'
     | '/api/public/inbound/webhook'
+    | '/api/public/mcp/download'
     | '/api/public/portal/$orgSlug'
     | '/api/public/worker/connectors'
     | '/api/public/worker/ingest'
@@ -837,6 +882,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_dash'
     | '/_authenticated/onboarding'
     | '/_authenticated/welcome'
+    | '/api/mcp'
     | '/docs/$datasetId'
     | '/invite/$token'
     | '/join/$ref'
@@ -859,6 +905,7 @@ export interface FileRouteTypes {
     | '/api/public/health'
     | '/api/public/metrics'
     | '/api/public/ready'
+    | '/api/v1/datasets'
     | '/_authenticated/_dash/admin/ai'
     | '/_authenticated/_dash/admin/alerts'
     | '/_authenticated/_dash/admin/api-docs'
@@ -868,6 +915,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_dash/admin/connectors'
     | '/_authenticated/_dash/admin/email-ingest'
     | '/_authenticated/_dash/admin/feedback'
+    | '/_authenticated/_dash/admin/health'
     | '/_authenticated/_dash/admin/organization'
     | '/_authenticated/_dash/admin/security'
     | '/_authenticated/_dash/admin/storage'
@@ -882,6 +930,7 @@ export interface FileRouteTypes {
     | '/api/public/auth/username-available'
     | '/api/public/inbound/postmark'
     | '/api/public/inbound/webhook'
+    | '/api/public/mcp/download'
     | '/api/public/portal/$orgSlug'
     | '/api/public/worker/connectors'
     | '/api/public/worker/ingest'
@@ -907,6 +956,7 @@ export interface RootRouteChildren {
   FeedbackRoute: typeof FeedbackRoute
   ProductGuideRoute: typeof ProductGuideRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiMcpRoute: typeof ApiMcpRoute
   DocsDatasetIdRoute: typeof DocsDatasetIdRoute
   InviteTokenRoute: typeof InviteTokenRoute
   JoinRefRoute: typeof JoinRefRoute
@@ -915,16 +965,17 @@ export interface RootRouteChildren {
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicMetricsRoute: typeof ApiPublicMetricsRoute
   ApiPublicReadyRoute: typeof ApiPublicReadyRoute
+  ApiV1DatasetsRoute: typeof ApiV1DatasetsRouteWithChildren
   ApiPublicAuthRecoverRoute: typeof ApiPublicAuthRecoverRoute
   ApiPublicAuthResolveLoginRoute: typeof ApiPublicAuthResolveLoginRoute
   ApiPublicAuthUsernameAvailableRoute: typeof ApiPublicAuthUsernameAvailableRoute
   ApiPublicInboundPostmarkRoute: typeof ApiPublicInboundPostmarkRoute
   ApiPublicInboundWebhookRoute: typeof ApiPublicInboundWebhookRoute
+  ApiPublicMcpDownloadRoute: typeof ApiPublicMcpDownloadRoute
   ApiPublicPortalOrgSlugRoute: typeof ApiPublicPortalOrgSlugRoute
   ApiPublicWorkerConnectorsRoute: typeof ApiPublicWorkerConnectorsRoute
   ApiPublicWorkerIngestRoute: typeof ApiPublicWorkerIngestRoute
   ApiPublicWorkerReportRoute: typeof ApiPublicWorkerReportRoute
-  ApiV1DatasetsDatasetIdRoute: typeof ApiV1DatasetsDatasetIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -998,6 +1049,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/welcome'
       preLoaderRoute: typeof AuthenticatedWelcomeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/mcp': {
+      id: '/api/mcp'
+      path: '/api/mcp'
+      fullPath: '/api/mcp'
+      preLoaderRoute: typeof ApiMcpRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/docs/$datasetId': {
       id: '/docs/$datasetId'
@@ -1153,6 +1211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicReadyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/datasets': {
+      id: '/api/v1/datasets'
+      path: '/api/v1/datasets'
+      fullPath: '/api/v1/datasets'
+      preLoaderRoute: typeof ApiV1DatasetsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/_dash/admin/': {
       id: '/_authenticated/_dash/admin/'
       path: '/admin'
@@ -1221,6 +1286,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/feedback'
       fullPath: '/admin/feedback'
       preLoaderRoute: typeof AuthenticatedDashAdminFeedbackRouteImport
+      parentRoute: typeof AuthenticatedDashRoute
+    }
+    '/_authenticated/_dash/admin/health': {
+      id: '/_authenticated/_dash/admin/health'
+      path: '/admin/health'
+      fullPath: '/admin/health'
+      preLoaderRoute: typeof AuthenticatedDashAdminHealthRouteImport
       parentRoute: typeof AuthenticatedDashRoute
     }
     '/_authenticated/_dash/admin/organization': {
@@ -1328,6 +1400,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicInboundWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/mcp/download': {
+      id: '/api/public/mcp/download'
+      path: '/api/public/mcp/download'
+      fullPath: '/api/public/mcp/download'
+      preLoaderRoute: typeof ApiPublicMcpDownloadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/portal/$orgSlug': {
       id: '/api/public/portal/$orgSlug'
       path: '/api/public/portal/$orgSlug'
@@ -1358,10 +1437,10 @@ declare module '@tanstack/react-router' {
     }
     '/api/v1/datasets/$datasetId': {
       id: '/api/v1/datasets/$datasetId'
-      path: '/api/v1/datasets/$datasetId'
+      path: '/$datasetId'
       fullPath: '/api/v1/datasets/$datasetId'
       preLoaderRoute: typeof ApiV1DatasetsDatasetIdRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ApiV1DatasetsRoute
     }
     '/api/v1/datasets/$datasetId/$sheet': {
       id: '/api/v1/datasets/$datasetId/$sheet'
@@ -1446,6 +1525,7 @@ interface AuthenticatedDashRouteChildren {
   AuthenticatedDashAdminConnectorsRoute: typeof AuthenticatedDashAdminConnectorsRoute
   AuthenticatedDashAdminEmailIngestRoute: typeof AuthenticatedDashAdminEmailIngestRoute
   AuthenticatedDashAdminFeedbackRoute: typeof AuthenticatedDashAdminFeedbackRoute
+  AuthenticatedDashAdminHealthRoute: typeof AuthenticatedDashAdminHealthRoute
   AuthenticatedDashAdminOrganizationRoute: typeof AuthenticatedDashAdminOrganizationRoute
   AuthenticatedDashAdminSecurityRoute: typeof AuthenticatedDashAdminSecurityRoute
   AuthenticatedDashAdminStorageRoute: typeof AuthenticatedDashAdminStorageRoute
@@ -1485,6 +1565,7 @@ const AuthenticatedDashRouteChildren: AuthenticatedDashRouteChildren = {
   AuthenticatedDashAdminEmailIngestRoute:
     AuthenticatedDashAdminEmailIngestRoute,
   AuthenticatedDashAdminFeedbackRoute: AuthenticatedDashAdminFeedbackRoute,
+  AuthenticatedDashAdminHealthRoute: AuthenticatedDashAdminHealthRoute,
   AuthenticatedDashAdminOrganizationRoute:
     AuthenticatedDashAdminOrganizationRoute,
   AuthenticatedDashAdminSecurityRoute: AuthenticatedDashAdminSecurityRoute,
@@ -1567,6 +1648,18 @@ const ApiV1DatasetsDatasetIdRouteWithChildren =
     ApiV1DatasetsDatasetIdRouteChildren,
   )
 
+interface ApiV1DatasetsRouteChildren {
+  ApiV1DatasetsDatasetIdRoute: typeof ApiV1DatasetsDatasetIdRouteWithChildren
+}
+
+const ApiV1DatasetsRouteChildren: ApiV1DatasetsRouteChildren = {
+  ApiV1DatasetsDatasetIdRoute: ApiV1DatasetsDatasetIdRouteWithChildren,
+}
+
+const ApiV1DatasetsRouteWithChildren = ApiV1DatasetsRoute._addFileChildren(
+  ApiV1DatasetsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -1575,6 +1668,7 @@ const rootRouteChildren: RootRouteChildren = {
   FeedbackRoute: FeedbackRoute,
   ProductGuideRoute: ProductGuideRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiMcpRoute: ApiMcpRoute,
   DocsDatasetIdRoute: DocsDatasetIdRoute,
   InviteTokenRoute: InviteTokenRoute,
   JoinRefRoute: JoinRefRoute,
@@ -1583,16 +1677,17 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicMetricsRoute: ApiPublicMetricsRoute,
   ApiPublicReadyRoute: ApiPublicReadyRoute,
+  ApiV1DatasetsRoute: ApiV1DatasetsRouteWithChildren,
   ApiPublicAuthRecoverRoute: ApiPublicAuthRecoverRoute,
   ApiPublicAuthResolveLoginRoute: ApiPublicAuthResolveLoginRoute,
   ApiPublicAuthUsernameAvailableRoute: ApiPublicAuthUsernameAvailableRoute,
   ApiPublicInboundPostmarkRoute: ApiPublicInboundPostmarkRoute,
   ApiPublicInboundWebhookRoute: ApiPublicInboundWebhookRoute,
+  ApiPublicMcpDownloadRoute: ApiPublicMcpDownloadRoute,
   ApiPublicPortalOrgSlugRoute: ApiPublicPortalOrgSlugRoute,
   ApiPublicWorkerConnectorsRoute: ApiPublicWorkerConnectorsRoute,
   ApiPublicWorkerIngestRoute: ApiPublicWorkerIngestRoute,
   ApiPublicWorkerReportRoute: ApiPublicWorkerReportRoute,
-  ApiV1DatasetsDatasetIdRoute: ApiV1DatasetsDatasetIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

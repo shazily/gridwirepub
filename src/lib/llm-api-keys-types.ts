@@ -27,6 +27,8 @@ export type OrgAiConfig = {
   pdf_parse_enabled?: boolean;
   pdf_parse_mock?: boolean;
   active_llm_key_id?: string | null;
+  /** When true, API-key holders may use POST/GET /api/mcp (hosted MCP). Default false. */
+  mcp_remote_enabled?: boolean;
 };
 
 export type ResolvedLlmRuntime = {

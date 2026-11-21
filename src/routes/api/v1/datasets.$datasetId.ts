@@ -46,6 +46,9 @@ export const Route = createFileRoute("/api/v1/datasets/$datasetId")({
           return new Response(null, { status: 304, headers: { ...mod.CORS_HEADERS, ETag: etag } });
         }
 
+        const mcpEnabled =
+          (dataset as { mcp_enabled?: boolean }).mcp_enabled !== false;
+
         const body = {
           id: dataset.id,
           name: dataset.name,
@@ -53,6 +56,7 @@ export const Route = createFileRoute("/api/v1/datasets/$datasetId")({
           slug: dataset.slug,
           access: dataset.api_access,
           status: dataset.status,
+          mcp_enabled: mcpEnabled,
           ownership: {
             uploaded_by: (dataset as { uploaded_by?: string | null }).uploaded_by ?? null,
             published_by: (dataset as { published_by?: string | null }).published_by ?? null,
