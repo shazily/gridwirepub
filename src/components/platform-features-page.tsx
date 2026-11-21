@@ -116,13 +116,13 @@ export function PlatformFeaturesPage() {
 
       <main className="relative flex-1">
         <div className="grid-bg absolute inset-0 opacity-20" aria-hidden />
-        <div className="relative mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-14">
-          <div className="max-w-3xl">
+        <div className="relative mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-14 lg:px-8">
+          <div className="max-w-4xl">
             <p className="text-sm font-medium text-primary">Platform capabilities</p>
             <h1 className="font-display mt-2 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
               Everything Gridwire ships today
             </h1>
-            <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
+            <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted-foreground sm:text-lg">
               Self-hostable spreadsheet-to-API platform with governed ingest, field-level security,
               interactive lineage, and a full admin console — no proprietary cloud lock-in.
             </p>

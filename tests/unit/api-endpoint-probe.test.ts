@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 
 import { probeDatasetEndpoints } from "../../src/lib/api-endpoint-probe.server";
 

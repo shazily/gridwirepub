@@ -1,4 +1,4 @@
-# Post-deploy smoke tests - must catch broken UI, not just /health.
+﻿# Post-deploy smoke tests - must catch broken UI, not just /health.
 param(
     [string]$PortalUrl = "",
     [switch]$SkipWorker
@@ -127,8 +127,32 @@ try {
         Fail "Homepage SSR" "error boundary HTML - server misconfigured"
     } elseif ($homeResp.Content -notmatch "spreadsheet") {
         Fail "Homepage SSR" "missing expected marketing landing content"
-    } else { Ok "Homepage / (SSR landing page)" }
+    } elseif ($homeResp.Content -notmatch "MCP") {
+        Fail "Homepage SSR" "missing MCP marketing feature"
+    } else { Ok "Homepage / (SSR landing page + MCP)" }
 } catch { Fail "Homepage SSR" $_.Exception.Message }
+
+try {
+    $mcpDl = Get-Http "$PortalUrl/api/public/mcp/download"
+    if ($mcpDl.StatusCode -ne 200) {
+        Fail "MCP download" "HTTP $($mcpDl.StatusCode)"
+    } else {
+        $tmpZip = Join-Path $env:TEMP "gridwire-smoke-mcp.zip"
+        Invoke-WebRequest -Uri "$PortalUrl/api/public/mcp/download" -OutFile $tmpZip -UseBasicParsing -TimeoutSec 30
+        $magic = [System.IO.File]::ReadAllBytes($tmpZip)[0..1]
+        Remove-Item $tmpZip -Force -ErrorAction SilentlyContinue
+        if ($magic[0] -ne 0x50 -or $magic[1] -ne 0x4B) {
+            Fail "MCP download" "response is not a ZIP"
+        } else { Ok "MCP download /api/public/mcp/download (ZIP)" }
+    }
+} catch { Fail "MCP download" $_.Exception.Message }
+
+try {
+    $mcpAuth = Get-Http "$PortalUrl/api/mcp"
+    if ($mcpAuth.StatusCode -ne 401) {
+        Fail "MCP auth gate" "expected 401, got $($mcpAuth.StatusCode)"
+    } else { Ok "MCP /api/mcp unauthenticated → 401" }
+} catch { Fail "MCP auth gate" $_.Exception.Message }
 
 try {
     $auth = Get-Http "$PortalUrl/auth"

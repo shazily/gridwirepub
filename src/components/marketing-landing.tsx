@@ -114,7 +114,7 @@ function GovernedIngestBanner() {
 
 function HeroMarketingCopy() {
   return (
-    <p className="max-w-xl text-base text-muted-foreground sm:text-lg">
+    <p className="max-w-2xl text-base text-muted-foreground sm:text-lg lg:max-w-none">
       <span className="text-foreground font-medium">Upload Excel, CSV, or PDFs</span> — including{" "}
       <span className="text-foreground font-medium">AI PDF table parsing</span>. Or let trusted teams{" "}
       <span className="text-foreground font-medium">email files to a governed ingest address</span> so data
@@ -440,6 +440,55 @@ function FeatureSlideshow() {
   );
 }
 
+function HeroCtas() {
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+      <Button size="lg" className="w-full shadow-lg shadow-primary/20 sm:w-auto" asChild>
+        <Link to="/auth" search={{ mode: "signup" }}>
+          Sign up with username &amp; password <ArrowRight className="h-4 w-4" />
+        </Link>
+      </Button>
+      <Button size="lg" variant="outline" className="w-full bg-background/60 sm:w-auto" asChild>
+        <Link to="/auth" search={{ mode: "signin" }}>
+          Sign in
+        </Link>
+      </Button>
+      <Button size="lg" variant="outline" className="w-full bg-background/60 sm:w-auto" asChild>
+        <a href={MCP_DOWNLOAD_PATH}>
+          <Download className="h-4 w-4" /> Download MCP
+        </a>
+      </Button>
+      <Button size="lg" variant="outline" className="w-full bg-background/60 sm:w-auto" asChild>
+        <Link to="/features">Explore all features</Link>
+      </Button>
+    </div>
+  );
+}
+
+function DeployForOrgPanel() {
+  return (
+    <div className="rounded-xl border border-primary/20 bg-card/70 p-4 shadow-sm backdrop-blur-sm sm:p-6 lg:p-8">
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="font-display text-lg font-bold sm:text-2xl">Deploy for your org</h2>
+        <span className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+          MIT license · Self-hostable
+        </span>
+      </div>
+      <p className="mt-3 max-w-3xl text-sm text-muted-foreground sm:text-base">
+        Postgres, auth, storage, and workers on infrastructure you control —{" "}
+        <span className="text-foreground font-medium">row-level isolation</span>,{" "}
+        <span className="text-foreground font-medium">hashed API keys</span>, field masking, and{" "}
+        <span className="text-foreground font-medium">full audit trails</span>.
+      </p>
+      <Button size="lg" variant="outline" className="mt-4 w-full bg-background/60 sm:w-auto" asChild>
+        <a href={GRIDWIRE_GITHUB_REPO_URL} target="_blank" rel="noreferrer">
+          <Github className="h-4 w-4" /> Get the Repo
+        </a>
+      </Button>
+    </div>
+  );
+}
+
 export function MarketingLandingPage() {
   return (
     <div className="flex min-h-screen flex-col">
@@ -456,68 +505,41 @@ export function MarketingLandingPage() {
           aria-hidden
         />
 
-        <div className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-8 pt-3 sm:px-6 sm:pb-10 lg:justify-center lg:pb-12 lg:pt-6">
-          <div className="space-y-5 sm:space-y-6 lg:max-w-3xl">
-            <h1 className="font-display text-3xl font-bold leading-[1.1] tracking-tight sm:text-5xl lg:text-[3.25rem]">
-              Turn spreadsheets and PDFs into a{" "}
-              <span className="text-primary">secure production API</span>.
-            </h1>
+        <div className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 pb-10 pt-4 sm:px-6 sm:pb-12 sm:pt-6 lg:px-8 lg:pb-16 lg:pt-8">
+          {/* First viewport: brand + copy + CTAs | feature showcase (desktop side-by-side) */}
+          <section className="grid w-full gap-8 lg:grid-cols-12 lg:items-center lg:gap-12 xl:gap-16">
+            <div className="flex min-w-0 flex-col gap-5 sm:gap-6 lg:col-span-6 xl:col-span-5">
+              <p className="font-display text-sm font-semibold tracking-wide text-primary sm:text-base">
+                Gridwire
+              </p>
+              <h1 className="font-display text-3xl font-bold leading-[1.1] tracking-tight sm:text-5xl lg:text-[3.35rem] xl:text-6xl">
+                Turn spreadsheets and PDFs into a{" "}
+                <span className="text-primary">secure production API</span>.
+              </h1>
+              <GovernedIngestBanner />
+              <HeroMarketingCopy />
+              <HeroCtas />
+            </div>
 
-            <GovernedIngestBanner />
+            <div className="min-w-0 lg:col-span-6 xl:col-span-7">
+              <FeatureSlideshow />
+            </div>
+          </section>
 
-            <HeroMarketingCopy />
-
-            <IngestPathPanel />
+          {/* Secondary content uses the full desktop width */}
+          <section className="mt-12 grid w-full gap-4 sm:mt-14 sm:gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <div className="md:col-span-2 xl:col-span-1">
+              <IngestPathPanel />
+            </div>
             <NewMcpSkillPanel />
             <NewAiPdfParsingPanel />
             <AudiencePanel />
             <DifferentiationPanel />
+          </section>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Button size="lg" className="w-full shadow-lg shadow-primary/20 sm:w-auto" asChild>
-                <Link to="/auth" search={{ mode: "signup" }}>
-                  Sign up with username &amp; password <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" className="w-full bg-background/60 sm:w-auto" asChild>
-                <Link to="/auth" search={{ mode: "signin" }}>
-                  Sign in
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" className="w-full bg-background/60 sm:w-auto" asChild>
-                <a href={MCP_DOWNLOAD_PATH}>
-                  <Download className="h-4 w-4" /> Download MCP
-                </a>
-              </Button>
-              <Button size="lg" variant="outline" className="w-full bg-background/60 sm:w-auto" asChild>
-                <Link to="/features">Explore all features</Link>
-              </Button>
-            </div>
-
-            <div className="rounded-xl border border-primary/20 bg-card/70 p-4 shadow-sm backdrop-blur-sm sm:p-6">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-display text-lg font-bold sm:text-2xl">Deploy for your org</h2>
-                <span className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                  MIT license · Self-hostable
-                </span>
-              </div>
-              <p className="mt-3 text-sm text-muted-foreground">
-                Postgres, auth, storage, and workers on infrastructure you control —{" "}
-                <span className="text-foreground font-medium">row-level isolation</span>,{" "}
-                <span className="text-foreground font-medium">hashed API keys</span>, field masking, and{" "}
-                <span className="text-foreground font-medium">full audit trails</span>.
-              </p>
-              <Button size="lg" variant="outline" className="mt-4 w-full bg-background/60 sm:w-auto" asChild>
-                <a href={GRIDWIRE_GITHUB_REPO_URL} target="_blank" rel="noreferrer">
-                  <Github className="h-4 w-4" /> Get the Repo
-                </a>
-              </Button>
-            </div>
-          </div>
-
-          <div className="mt-10 border-t border-border/60 pt-8 sm:mt-12">
-            <FeatureSlideshow />
-          </div>
+          <section className="mt-10 w-full sm:mt-12">
+            <DeployForOrgPanel />
+          </section>
         </div>
       </main>
 

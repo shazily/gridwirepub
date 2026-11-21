@@ -22,7 +22,7 @@ type PublicSiteHeaderProps = {
 
 export function PublicSiteHeader({ homeTo = "/", homeParams, trailing }: PublicSiteHeaderProps) {
   return (
-    <header className="mx-auto flex w-full max-w-6xl shrink-0 items-center justify-between gap-3 border-b border-border/50 px-4 py-3 sm:px-6 sm:py-4">
+    <header className="mx-auto flex w-full max-w-7xl shrink-0 items-center justify-between gap-3 border-b border-border/50 px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
       <Link
         to={homeTo}
         params={homeParams}
@@ -38,7 +38,7 @@ export function PublicSiteHeader({ homeTo = "/", homeParams, trailing }: PublicS
 export function PublicSiteFooter() {
   return (
     <footer className="shrink-0 border-t border-border/60">
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:text-sm">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-4 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:text-sm lg:px-8">
         <Wordmark />
         <div className="flex flex-col gap-2 sm:items-end">
           <span>© {new Date().getFullYear()} Gridwire — MIT licensed</span>
