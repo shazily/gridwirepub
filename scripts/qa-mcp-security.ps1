@@ -61,8 +61,9 @@ try {
     if ($landing.StatusCode -ne 200) { Fail "Homepage" "HTTP $($landing.StatusCode)" }
     elseif ($landing.Content -notmatch "Gridwire") { Fail "Homepage" "missing Gridwire brand" }
     elseif ($landing.Content -notmatch "MCP") { Fail "Homepage" "missing MCP marketing" }
-    elseif ($landing.Content -notmatch "max-w-7xl") { Fail "Homepage layout" "expected full-width max-w-7xl class" }
-    else { Ok "Homepage brand + MCP + full-width layout" }
+    elseif ($landing.Content -notmatch "2xl:px-16") { Fail "Homepage layout" "expected fluid shell padding 2xl:px-16" }
+    elseif ($landing.Content -match "max-w-7xl") { Fail "Homepage layout" "hero shell still capped at max-w-7xl" }
+    else { Ok "Homepage brand + MCP + fluid full-width layout" }
 } catch { Fail "Homepage" $_.Exception.Message }
 
 # 2) MCP zip download

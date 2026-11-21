@@ -505,13 +505,11 @@ export function MarketingLandingPage() {
           aria-hidden
         />
 
-        <div className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 pb-10 pt-4 sm:px-6 sm:pb-12 sm:pt-6 lg:px-8 lg:pb-16 lg:pt-8">
-          {/* First viewport: brand + copy + CTAs | feature showcase (desktop side-by-side) */}
-          <section className="grid w-full gap-8 lg:grid-cols-12 lg:items-center lg:gap-12 xl:gap-16">
-            <div className="flex min-w-0 flex-col gap-5 sm:gap-6 lg:col-span-6 xl:col-span-5">
-              <p className="font-display text-sm font-semibold tracking-wide text-primary sm:text-base">
-                Gridwire
-              </p>
+        {/* Fluid shell: no max-width cap — padding scales with viewport */}
+        <div className="relative mx-auto flex w-full flex-1 flex-col px-4 pb-10 pt-4 sm:px-6 sm:pb-12 sm:pt-6 md:px-8 lg:px-10 lg:pb-16 lg:pt-8 xl:px-12 2xl:px-16">
+          {/* First viewport: copy + CTAs | feature showcase */}
+          <section className="grid w-full gap-8 lg:grid-cols-12 lg:items-center lg:gap-10 xl:gap-14 2xl:gap-16">
+            <div className="flex min-w-0 flex-col gap-5 sm:gap-6 lg:col-span-5 xl:col-span-5 2xl:col-span-4">
               <h1 className="font-display text-3xl font-bold leading-[1.1] tracking-tight sm:text-5xl lg:text-[3.35rem] xl:text-6xl">
                 Turn spreadsheets and PDFs into a{" "}
                 <span className="text-primary">secure production API</span>.
@@ -521,14 +519,14 @@ export function MarketingLandingPage() {
               <HeroCtas />
             </div>
 
-            <div className="min-w-0 lg:col-span-6 xl:col-span-7">
+            <div className="min-w-0 lg:col-span-7 xl:col-span-7 2xl:col-span-8">
               <FeatureSlideshow />
             </div>
           </section>
 
-          {/* Secondary content uses the full desktop width */}
-          <section className="mt-12 grid w-full gap-4 sm:mt-14 sm:gap-5 md:grid-cols-2 xl:grid-cols-3">
-            <div className="md:col-span-2 xl:col-span-1">
+          {/* Secondary content spans the full viewport width */}
+          <section className="mt-12 grid w-full gap-4 sm:mt-14 sm:gap-5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            <div className="md:col-span-2 xl:col-span-1 2xl:col-span-1">
               <IngestPathPanel />
             </div>
             <NewMcpSkillPanel />
